@@ -51,17 +51,17 @@ const productoEmbebidoSchema = new Schema(
 
 const pedidoSchema = new Schema(
   {
-    codigo_pedido: { type: String, required: true },
+    codigoPedido: { type: String, required: true },
     descripcion: { type: String, required: true },
     // "cliente" puede ser un ObjectId (referencia) o un objeto embebido completo
-    cliente: { type: Schema.Types.Mixed, required: true },
+    cliente: { type: Schema.Types.ObjectId, ref: 'Cliente', required: true },
     // El export original relaciona empleadoId con "clientes", pero por el nombre
     // probablemente corresponda a Trabajador. Ajusta el ref si aplica.
     empleadoId: { type: Schema.Types.ObjectId, ref: 'Trabajador', required: true },
-    estado_pedido: { type: [String], required: true },
+    estadoPedido: { type: String, enum: ['En proceso', 'Completado', 'Pendiente', 'Cancelado'], required: true },
     evidencia: { type: String, required: true },
-    fecha_creacion: { type: String, required: true },
-    hora_creacion: { type: String, required: true },
+    fechaCreacion: { type: Date, required: true },
+    horaCreacion: { type: String, required: true },
     factura: { type: facturaSchema, required: true },
     producto: { type: productoEmbebidoSchema, required: true },
   },

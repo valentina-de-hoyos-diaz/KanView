@@ -11,7 +11,7 @@ const trabajadorSchema = new Schema(
     fechaNacimiento: { type: Date, required: true },
     cargo: { type: String, required: true },
     RH: { type: String, required: true },
-    salario: { type: Number, required: true },
+    salario: { type: Schema.Types.Decimal128, required: true },
     tareasRealizadas: { type: Number, required: true },
   },
   { collection: 'trabajador' }

@@ -3,10 +3,10 @@ const { Schema } = mongoose;
 
 const finanzaSchema = new Schema(
   {
-    IdAdministrador: { type: Schema.Types.ObjectId, ref: 'Administrador', required: true },
-    FuentesIngresos: { type: Schema.Types.Decimal128, required: true },
-    Gastos: { type: Schema.Types.Decimal128, required: true },
-    ProductosVendidos: { type: Number, required: true },
+    idAdministrador: { type: Schema.Types.ObjectId, ref: 'Administrador', required: true },
+    fuentesIngresos: { type: Schema.Types.Decimal128, required: true },
+    gastos: { type: Schema.Types.Decimal128, required: true },
+    productosVendidos: { type: Number, required: true },
   },
   { collection: 'finanzas' }
 );

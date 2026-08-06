@@ -4,7 +4,7 @@ const { Schema } = mongoose;
 const actividadSchema = new Schema(
   {
     descripcion: { type: String, required: true },
-    estado: { type: [String], required: true },
+    estado: { type: String, enum: ['En proceso', 'Completado', 'Pendiente', 'Cancelado'], required: [true, "Digita una opción válida"] },
     fechaInicio: { type: Date, required: true },
     fechaFin: { type: Date, required: true },
     idTarea: { type: Schema.Types.ObjectId, ref: 'TareaPedido', required: true },

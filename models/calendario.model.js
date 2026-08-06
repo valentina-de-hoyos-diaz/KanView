@@ -3,13 +3,13 @@ const { Schema } = mongoose;
 
 const calendarioSchema = new Schema(
   {
-    Anio: { type: Number, required: true },
-    Mes: { type: Number, required: true },
-    Dia: { type: Number, required: true },
-    Fecha: { type: String, required: true },
-    NombreDia: { type: String, required: true },
-    NombreMes: { type: String, required: true },
-    Idpedidos: { type: Schema.Types.ObjectId, ref: 'Pedido', required: true },
+    año: { type: Number, required: true },
+    mes: { type: Number, required: true },
+    dia: { type: Number, required: true },
+    fecha: { type: Date, required: true },
+    nombreDia: { type: String, required: true },
+    nombreMes: { type: String, required: true },
+    idPedidos: { type: Schema.Types.ObjectId, ref: 'Pedido', required: true },
   },
   { collection: 'calendarios' }
 );

@@ -3,12 +3,12 @@ const { Schema } = mongoose;
 
 const productoSchema = new Schema(
   {
-    Nombre: { type: String, required: true },
-    CodigoProducto: { type: String, required: true },
-    Descripcion: { type: String, required: true },
-    Categoria: { type: String, required: true },
-    Precio: { type: Number, required: true },
-    Stock: { type: Number, required: true },
+    nombre: { type: String, required: true },
+    codigoProducto: { type: String, required: true },
+    descripcion: { type: String, required: true },
+    categoria: { type: String, enum: ['Oficina', 'Industrial', 'Hogar', 'Automoviles'], required: [true, "Digita una opción válida"] },
+    precio: { type: Schema.Types.Decimal128, required: true },
+    stock: { type: Number, required: true },
   },
   { collection: 'producto' }
 );

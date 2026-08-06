@@ -5,9 +5,9 @@ const tareaPedidoSchema = new Schema(
   {
     nombre: { type: String, required: true },
     descripcion: { type: String, required: true },
-    estado: { type: [String], required: true },
-    fecha_inicio: { type: Date, required: true },
-    fecha_fin: { type: Date, required: true },
+    estado: { type: String, enum: ['En proceso', 'Completado', 'Pendiente', 'Cancelado'], required: [true, "Digita una opción válida"]},
+    fechaInicio: { type: Date, required: true },
+    fechaFin: { type: Date, required: true },
     idPedido: { type: Schema.Types.ObjectId, ref: 'Pedido', required: true },
   },
   { collection: 'tareas_pedido' }

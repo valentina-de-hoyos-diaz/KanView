@@ -8,8 +8,8 @@ const clienteSchema = new Schema(
     celular: { type: String, required: true },
     direccion: { type: String, required: true },
     // "edad" viene a veces como string y a veces como int en los datos originales
-    edad: { type: Schema.Types.Mixed, required: true },
-    fechaNacimiento: { type: String, required: true },
+    edad: { type: Number, required: true },
+    fechaNacimiento: { type: Date, required: true },
   },
   { collection: 'clientes' }
 );
