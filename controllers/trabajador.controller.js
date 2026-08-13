@@ -1,247 +1,114 @@
+// Importación de mongoose y del modelo Trabajador
 const mongoose = require('mongoose');
 const Trabajador = require('../models/trabajador.model');
 
-const { isValidObjectId, Types } = mongoose;
+// Extrae Decimal128 para el campo salario
+const { Types } = mongoose;
 
-const getTrabajadores = async (req, res) => {
+// Obtiene todos los trabajadores de la colección y los retorna en formato JSON
+exports.getTrabajadores = async (req, res) => {
   try {
     const trabajadores = await Trabajador.find();
-    res.status(200).json({
-      status: 200,
-      message: 'Trabajadores obtenidos correctamente',
-      data: trabajadores,
-    });
+    res.status(200).json(trabajadores);
   } catch (error) {
-    res.status(500).json({
-      status: 500,
-      message: 'Error al obtener los trabajadores',
-      data: { error: error.message },
-    });
+    res.status(500).json({ error: error.message });
   }
 };
 
-const getTrabajadorById = async (req, res) => {
+// Busca un trabajador por su documento (recibido como req.params.id desde el router)
+// Si no existe, responde con 404
+exports.getTrabajadorById = async (req, res) => {
   try {
-    const { id } = req.params;
-    if (!isValidObjectId(id)) {
-      return res.status(400).json({
-        status: 400,
-        message: 'El ID proporcionado no es válido',
-        data: null,
-      });
-    }
-    const trabajador = await Trabajador.findById(id);
+    const trabajador = await Trabajador.findOne({ documento: req.params.id });
     if (!trabajador) {
-      return res.status(404).json({
-        status: 404,
-        message: 'Trabajador no encontrado',
-        data: null,
-      });
+      return res.status(404).json({ error: 'Trabajador no encontrado' });
     }
-    res.status(200).json({
-      status: 200,
-      message: 'Trabajador obtenido correctamente',
-      data: trabajador,
-    });
+    res.status(200).json(trabajador);
   } catch (error) {
-    res.status(500).json({
-      status: 500,
-      message: 'Error al obtener el trabajador',
-      data: { error: error.message },
-    });
+    res.status(500).json({ error: error.message });
   }
 };
 
-const createTrabajador = async (req, res) => {
+// Registra un nuevo trabajador
+exports.createTrabajador = async (req, res) => {
   try {
-    const {
-      nombre,
-      documento,
-      celular,
-      direccion,
-      edad,
-      fechaNacimiento,
-      cargo,
-      RH,
-      salario,
-      tareasRealizadas,
-    } = req.body;
-
-    const camposRequeridos = {
-      nombre,
-      documento,
-      celular,
-      direccion,
-      edad,
-      fechaNacimiento,
-      cargo,
-      RH,
-      salario,
-      tareasRealizadas,
+    // Arma el objeto con los 10 campos del modelo a partir del body
+    let nuevoTrabajador = {
+      nombre: req.body.nombre,
+      documento: req.body.documento,
+      celular: req.body.celular,
+      direccion: req.body.direccion,
+      edad: req.body.edad,
+      fechaNacimiento: req.body.fechaNacimiento,
+      cargo: req.body.cargo,
+      RH: req.body.RH,
+      salario: req.body.salario,
+      tareasRealizadas: req.body.tareasRealizadas,
     };
 
-    const faltantes = Object.keys(camposRequeridos).filter(
-      (key) => camposRequeridos[key] === undefined || camposRequeridos[key] === null
-    );
-
-    if (faltantes.length > 0) {
-      return res.status(400).json({
-        status: 400,
-        message: `Faltan campos requeridos: ${faltantes.join(', ')}`,
-        data: null,
-      });
+    // Convierte salario a Decimal128 (tipo del modelo)
+    if (nuevoTrabajador.salario !== undefined) {
+      nuevoTrabajador.salario = Types.Decimal128.fromString(String(nuevoTrabajador.salario));
     }
 
-    const salarioDecimal = Types.Decimal128.fromString(String(salario));
-    const fechaNacimientoDate = new Date(fechaNacimiento);
-
-    if (isNaN(fechaNacimientoDate.getTime())) {
-      return res.status(400).json({
-        status: 400,
-        message: 'fechaNacimiento no es una fecha válida',
-        data: null,
-      });
+    // Convierte fechaNacimiento a tipo Date
+    if (nuevoTrabajador.fechaNacimiento !== undefined) {
+      nuevoTrabajador.fechaNacimiento = new Date(nuevoTrabajador.fechaNacimiento);
     }
 
-    const nuevoTrabajador = new Trabajador({
-      nombre,
-      documento,
-      celular,
-      direccion,
-      edad,
-      fechaNacimiento: fechaNacimientoDate,
-      cargo,
-      RH,
-      salario: salarioDecimal,
-      tareasRealizadas,
-    });
-
-    const trabajadorGuardado = await nuevoTrabajador.save();
-
-    res.status(201).json({
-      status: 201,
-      message: 'Trabajador creado correctamente',
-      data: trabajadorGuardado,
-    });
+    // Crea el documento en la base y responde 201
+    const trabajadorGuardado = await Trabajador.create(nuevoTrabajador);
+    res.status(201).json(trabajadorGuardado);
   } catch (error) {
-    if (error instanceof mongoose.Error.ValidationError) {
-      return res.status(400).json({
-        status: 400,
-        message: 'Error de validación',
-        data: { error: error.message },
-      });
-    }
-    res.status(500).json({
-      status: 500,
-      message: 'Error al crear el trabajador',
-      data: { error: error.message },
-    });
+    res.status(500).json({ error: error.message });
   }
 };
 
-const updateTrabajador = async (req, res) => {
+// Actualiza un trabajador existente
+exports.updateTrabajador = async (req, res) => {
   try {
-    const { id } = req.params;
-    if (!isValidObjectId(id)) {
-      return res.status(400).json({
-        status: 400,
-        message: 'El ID proporcionado no es válido',
-        data: null,
-      });
-    }
+    // Arma el objeto con los campos a actualizar desde el body
+    let datos = {
+      nombre: req.body.nombre,
+      documento: req.body.documento,
+      celular: req.body.celular,
+      direccion: req.body.direccion,
+      edad: req.body.edad,
+      fechaNacimiento: req.body.fechaNacimiento,
+      cargo: req.body.cargo,
+      RH: req.body.RH,
+      salario: req.body.salario,
+      tareasRealizadas: req.body.tareasRealizadas,
+    };
 
-    const datos = { ...req.body };
-
+    // Aplica las mismas conversiones de salario y fechaNacimiento
     if (datos.salario !== undefined) {
       datos.salario = Types.Decimal128.fromString(String(datos.salario));
     }
 
     if (datos.fechaNacimiento !== undefined) {
-      const fecha = new Date(datos.fechaNacimiento);
-      if (isNaN(fecha.getTime())) {
-        return res.status(400).json({
-          status: 400,
-          message: 'fechaNacimiento no es una fecha válida',
-          data: null,
-        });
-      }
-      datos.fechaNacimiento = fecha;
+      datos.fechaNacimiento = new Date(datos.fechaNacimiento);
     }
 
-    const trabajadorActualizado = await Trabajador.findByIdAndUpdate(
-      id,
-      datos,
-      { new: true, runValidators: true }
+    // Actualiza el trabajador cuyo documento coincida con req.params.id usando $set
+    const trabajadorActualizado = await Trabajador.updateOne(
+      { documento: req.params.id },
+      { $set: datos }
     );
-
-    if (!trabajadorActualizado) {
-      return res.status(404).json({
-        status: 404,
-        message: 'Trabajador no encontrado',
-        data: null,
-      });
-    }
-
-    res.status(200).json({
-      status: 200,
-      message: 'Trabajador actualizado correctamente',
-      data: trabajadorActualizado,
-    });
+    // Responde con el resultado de la operación
+    res.status(200).json(trabajadorActualizado);
   } catch (error) {
-    if (error instanceof mongoose.Error.ValidationError) {
-      return res.status(400).json({
-        status: 400,
-        message: 'Error de validación',
-        data: { error: error.message },
-      });
-    }
-    res.status(500).json({
-      status: 500,
-      message: 'Error al actualizar el trabajador',
-      data: { error: error.message },
-    });
+    res.status(500).json({ error: error.message });
   }
 };
 
-const deleteTrabajador = async (req, res) => {
+// Elimina el trabajador cuyo documento coincida con req.params.id
+// Responde con el resultado de la operación
+exports.deleteTrabajador = async (req, res) => {
   try {
-    const { id } = req.params;
-    if (!isValidObjectId(id)) {
-      return res.status(400).json({
-        status: 400,
-        message: 'El ID proporcionado no es válido',
-        data: null,
-      });
-    }
-
-    const trabajadorEliminado = await Trabajador.findByIdAndDelete(id);
-
-    if (!trabajadorEliminado) {
-      return res.status(404).json({
-        status: 404,
-        message: 'Trabajador no encontrado',
-        data: null,
-      });
-    }
-
-    res.status(200).json({
-      status: 200,
-      message: 'Trabajador eliminado correctamente',
-      data: trabajadorEliminado,
-    });
+    const trabajadorEliminado = await Trabajador.deleteOne({ documento: req.params.id });
+    res.status(200).json(trabajadorEliminado);
   } catch (error) {
-    res.status(500).json({
-      status: 500,
-      message: 'Error al eliminar el trabajador',
-      data: { error: error.message },
-    });
+    res.status(500).json({ error: error.message });
   }
-};
-
-module.exports = {
-  getTrabajadores,
-  getTrabajadorById,
-  createTrabajador,
-  updateTrabajador,
-  deleteTrabajador,
 };
