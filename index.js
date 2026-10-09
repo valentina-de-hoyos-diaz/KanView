@@ -1,3 +1,4 @@
+const path = require('path');
 const express = require('express');
 
 const config = require('./config/env');
@@ -10,11 +11,24 @@ const { authenticate } = require('./middleware/autenticacion.middleware');
 
 const app = express();
 
+app.set('view engine', 'ejs');
+app.set('views', path.join(__dirname, 'views'));
+
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+app.use(express.static(path.join(__dirname, 'public')));
 
 app.use('/api/auth', autenticacionRouter);
 app.use('/api/trabajadores', authenticate, trabajadorRouter);
 app.use('/api/pedidos', authenticate, pedidoRouter);
+
+app.get('/', (req, res) => {
+  res.redirect('/login');
+});
+
+app.get('/login', (req, res) => {
+  res.render('pages/login');
+});
 
 app.use((req, res) => {
   res.status(404).json({ status: 404, message: 'Ruta no encontrada', data: null });
