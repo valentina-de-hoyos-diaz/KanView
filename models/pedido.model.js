@@ -40,11 +40,11 @@ const facturaSchema = new Schema(
 const productoEmbebidoSchema = new Schema(
   {
     nombre: { type: String, required: true },
-    codigo: { type: String, required: true },
-    descripcion: { type: String, required: true },
-    cantidad: { type: Number, required: true },
-    precio: { type: Number, required: true },
-    fecha_registro: { type: Date, required: true },
+    codigo: { type: String },
+    descripcion: { type: String },
+    cantidad: { type: Number, default: 1 },
+    precio: { type: Number, default: 0 },
+    fecha_registro: { type: Date, default: Date.now },
   },
   { _id: false }
 );
@@ -53,17 +53,26 @@ const pedidoSchema = new Schema(
   {
     codigoPedido: { type: String, required: true },
     descripcion: { type: String, required: true },
-    // "cliente" puede ser un ObjectId (referencia) o un objeto embebido completo
+    // "cliente" es el cliente dueño del pedido (lo crea él mismo o un admin a su nombre)
     cliente: { type: Schema.Types.ObjectId, ref: 'Cliente', required: true },
-    // El export original relaciona empleadoId con "clientes", pero por el nombre
-    // probablemente corresponda a Trabajador. Ajusta el ref si aplica.
-    empleadoId: { type: Schema.Types.ObjectId, ref: 'Trabajador', required: true },
+    // "empleadoId" se asigna después; un cliente no sabe qué trabajador lo atiende
+    empleadoId: { type: Schema.Types.ObjectId, ref: 'Trabajador' },
     estadoPedido: { type: String, enum: ['En proceso', 'Completado', 'Pendiente', 'Cancelado'], required: true },
-    evidencia: { type: String, required: true },
+    evidencia: { type: String },
     fechaCreacion: { type: Date, required: true },
     horaCreacion: { type: String, required: true },
-    factura: { type: facturaSchema, required: true },
-    producto: { type: productoEmbebidoSchema, required: true },
+    factura: { type: facturaSchema },
+    producto: { type: productoEmbebidoSchema },
+    usuarioCreador: {
+      type: Schema.Types.ObjectId,
+      refPath: 'tipoUsuarioCreador',
+      required: true,
+    },
+    tipoUsuarioCreador: {
+      type: String,
+      enum: ['Usuario', 'Cliente'],
+      default: 'Usuario',
+    },
   },
   { collection: 'pedidos' }
 );

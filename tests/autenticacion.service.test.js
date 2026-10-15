@@ -15,6 +15,7 @@ const {
   firmarToken,
   verificarToken,
   compararApiKey,
+  longitudPasswordValida,
 } = require('../services/autenticacion.service');
 
 test('hashPassword no almacena la contraseña en claro y verifica correctamente', async () => {
@@ -62,4 +63,13 @@ test('compararApiKey acepta solo la API key configurada', () => {
   assert.equal(compararApiKey('otra-clave'), false);
   assert.equal(compararApiKey(undefined), false);
   assert.equal(compararApiKey(''), false);
+});
+
+test('longitudPasswordValida exige entre 8 y 72 caracteres de tipo string', () => {
+  assert.equal(longitudPasswordValida('1234567'), false);
+  assert.equal(longitudPasswordValida('12345678'), true);
+  assert.equal(longitudPasswordValida('a'.repeat(72)), true);
+  assert.equal(longitudPasswordValida('a'.repeat(73)), false);
+  assert.equal(longitudPasswordValida(undefined), false);
+  assert.equal(longitudPasswordValida(12345678), false);
 });

@@ -6,8 +6,10 @@ require('./config/connectiondb');
 
 const autenticacionRouter = require('./router/autenticacion.router');
 const trabajadorRouter = require('./router/trabajador.router');
+const clienteRouter = require('./router/cliente.router');
 const pedidoRouter = require('./router/pedido.router');
-const { authenticate } = require('./middleware/autenticacion.middleware');
+const productoRouter = require('./router/producto.router');
+const { authenticate, requireUsuario } = require('./middleware/autenticacion.middleware');
 
 const app = express();
 
@@ -19,8 +21,10 @@ app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, 'public')));
 
 app.use('/api/auth', autenticacionRouter);
-app.use('/api/trabajadores', authenticate, trabajadorRouter);
+app.use('/api/trabajadores', authenticate, requireUsuario, trabajadorRouter);
+app.use('/api/clientes', authenticate, requireUsuario, clienteRouter);
 app.use('/api/pedidos', authenticate, pedidoRouter);
+app.use('/api/productos', authenticate, productoRouter);
 
 app.get('/', (req, res) => {
   res.redirect('/login');
@@ -28,6 +32,22 @@ app.get('/', (req, res) => {
 
 app.get('/login', (req, res) => {
   res.render('pages/login');
+});
+
+app.get('/clientes', (req, res) => {
+  res.render('pages/clientes', { titulo: 'Clientes' });
+});
+
+app.get('/pedidos', (req, res) => {
+  res.render('pages/pedidos', { titulo: 'Pedidos' });
+});
+
+app.get('/productos', (req, res) => {
+  res.render('pages/productos', { titulo: 'Productos' });
+});
+
+app.get('/portal', (req, res) => {
+  res.render('pages/portal', { titulo: 'Portal del Cliente' });
 });
 
 app.use((req, res) => {

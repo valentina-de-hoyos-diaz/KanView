@@ -123,30 +123,13 @@
 <h2 class="font-headline-lg-mobile text-headline-lg-mobile md:font-headline-lg md:text-headline-lg text-on-surface">Bienvenido de nuevo</h2>
 <p class="font-body-md text-body-md text-on-surface-variant mt-2">Accede a tu panel de manufactura artesanal.</p>
 </div>
-<!-- Social Login -->
-<div class="flex flex-col gap-4">
-<button class="w-full flex items-center justify-center gap-3 px-6 py-3 rounded-2xl bg-surface hover:bg-surface-container-low border border-outline-variant/30 shadow-neomorphic transition-all duration-200 group" type="button">
-<img alt="Google" class="w-5 h-5 group-hover:scale-110 transition-transform duration-200" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBVrv9SFZldilM0ovoks86rIJ5EEXVDeHMW5nakWUQ1mBvwECnBAOws37PB5sCqoC3J2QYvpjQVCN2xCTAfRnyLr-gd4tdEvn_LoV0f006h_Bj5JJcoBGrKnKBFhVxPmGt6WDLb5bRyzCL3QXvmuWJAeW3lmx6PP1C2VpaxEVwq_uyqUmUG9NIv8B02lT521kUW6k0ZuTsS3YgRZu5BPPxmMeyhAaxedQVTYqq9DKSzQWXsTzXKbTfXIw"/>
-<span class="font-label-md text-label-md text-on-surface">Continuar con Google</span>
-</button>
-<button class="w-full flex items-center justify-center gap-3 px-6 py-3 rounded-2xl bg-surface hover:bg-surface-container-low border border-outline-variant/30 shadow-neomorphic transition-all duration-200 group" type="button">
-<img alt="Facebook" class="w-5 h-5 group-hover:scale-110 transition-transform duration-200" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCSN1bHLfs1UVlC3b7HX6ZIHegPHi-kTcUN4Liya4ZLwbAFyFc3GTrfCA3ZwmPem5WOSAQV9coHpRODG-sPFTcolxIH1oLpXyZg6cnfWW6wH-xaqS-dW5eyCrB_zMRu9ImFU3htnoe7mNr9Gbo-Wtvq8H21Iye9DVTwdxNqE4YsGJqJ4Scnh12ryfvsAnfdm0eZU6hBMMPO4GJoqjPUkPBS2gdiK60JccbgL-_vgNw8YGLukRCA1XRX8A"/>
-<span class="font-label-md text-label-md text-on-surface">Continuar con Facebook</span>
-</button>
-</div>
-<!-- Divider -->
-<div class="flex items-center gap-4 my-2">
-<div class="flex-1 h-px bg-outline-variant/40"></div>
-<span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">O con correo electrónico</span>
-<div class="flex-1 h-px bg-outline-variant/40"></div>
-</div>
 <!-- Form -->
-<form class="flex flex-col gap-5">
+<form class="flex flex-col gap-5" id="form-login">
 <div class="flex flex-col gap-2">
-<label class="font-label-md text-label-md text-on-surface" for="email">Correo electrónico</label>
+<label class="font-label-md text-label-md text-on-surface" for="email">Correo o documento</label>
 <div class="relative flex items-center">
 <span class="material-symbols-outlined absolute left-4 text-outline z-10 pointer-events-none">mail</span>
-<input class="w-full pl-11 pr-4 py-3 bg-surface-container-lowest border border-outline-variant rounded-xl text-on-surface focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all shadow-inner-neomorphic placeholder:text-outline/50" id="email" name="email" placeholder="tu@empresa.com" type="email"/>
+<input class="w-full pl-11 pr-4 py-3 bg-surface-container-lowest border border-outline-variant rounded-xl text-on-surface focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all shadow-inner-neomorphic placeholder:text-outline/50" id="email" name="email" placeholder="tu@empresa.com o tu documento" type="text"/>
 </div>
 </div>
 <div class="flex flex-col gap-2">
@@ -166,7 +149,8 @@
 </label>
 <a class="font-label-sm text-label-sm text-primary hover:text-primary-fixed-dim transition-colors font-semibold" href="#">¿Olvidé mi contraseña?</a>
 </div>
-<button class="mt-4 w-full bg-primary hover:bg-primary-fixed-dim text-on-primary font-label-md text-label-md py-3.5 rounded-2xl shadow-[0_12px_24px_rgba(0,128,128,0.2)] hover:shadow-[0_16px_32px_rgba(0,128,128,0.3)] transition-all duration-300 active:scale-[0.98] flex justify-center items-center gap-2" type="button">
+<p class="hidden font-label-sm text-label-sm text-error bg-error-container/40 border border-error/20 rounded-xl px-4 py-3" id="login-error"></p>
+<button class="mt-4 w-full bg-primary hover:bg-primary-fixed-dim text-on-primary font-label-md text-label-md py-3.5 rounded-2xl shadow-[0_12px_24px_rgba(0,128,128,0.2)] hover:shadow-[0_16px_32px_rgba(0,128,128,0.3)] transition-all duration-300 active:scale-[0.98] flex justify-center items-center gap-2" id="btn-login" type="submit">
                     Iniciar sesión
                     <span class="material-symbols-outlined text-[20px]">arrow_forward</span>
 </button>
@@ -202,5 +186,65 @@
 <div class="w-2 h-2 rounded-full bg-outline-variant/50"></div>
 </div>
 </aside>
+<script>
+        const formLogin = document.getElementById('form-login');
+        const errorLogin = document.getElementById('login-error');
+        const botonLogin = document.getElementById('btn-login');
+
+        const mostrarErrorLogin = (mensaje) => {
+            errorLogin.textContent = mensaje;
+            errorLogin.classList.remove('hidden');
+        };
+
+        formLogin.addEventListener('submit', async (evento) => {
+            evento.preventDefault();
+            errorLogin.classList.add('hidden');
+
+            const identificador = document.getElementById('email').value.trim();
+            const password = document.getElementById('password').value;
+
+            if (!identificador || !password) {
+                mostrarErrorLogin('Ingresa tus credenciales para continuar.');
+                return;
+            }
+
+            const esEmail = identificador.includes('@');
+            const url = esEmail ? '/api/auth/login' : '/api/auth/login-cliente';
+            const cuerpo = esEmail
+                ? { email: identificador, password }
+                : { documento: identificador, password };
+
+            botonLogin.disabled = true;
+            botonLogin.classList.add('opacity-70');
+
+            try {
+                const respuesta = await fetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(cuerpo),
+                });
+
+                const datos = await respuesta.json().catch(() => ({}));
+
+                if (!respuesta.ok) {
+                    mostrarErrorLogin(datos.message || 'No se pudo iniciar sesión.');
+                    return;
+                }
+
+                const perfil = esEmail ? datos.data.usuario : datos.data.cliente;
+
+                localStorage.setItem('token', datos.data.token);
+                localStorage.setItem('tipo', esEmail ? 'Usuario' : 'Cliente');
+                localStorage.setItem('nombre', perfil ? perfil.nombre : '');
+
+                window.location.href = esEmail ? '/clientes' : '/portal';
+            } catch (error) {
+                mostrarErrorLogin('No se pudo conectar con el servidor.');
+            } finally {
+                botonLogin.disabled = false;
+                botonLogin.classList.remove('opacity-70');
+            }
+        });
+    </script>
 </body>
 </html>

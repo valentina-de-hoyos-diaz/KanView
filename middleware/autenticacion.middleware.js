@@ -109,10 +109,23 @@ const authenticateUser = (req, res, next) => {
   return noAutorizado(res, 'Se requiere autenticación de usuario');
 };
 
+const requireUsuario = (req, res, next) => {
+  if (req.sesion && req.sesion.tipoUsuario === 'Cliente') {
+    return res.status(403).json({
+      status: 403,
+      message: 'Acceso restringido a administradores',
+      data: null,
+    });
+  }
+
+  return next();
+};
+
 module.exports = {
   requireJwt,
   requireApiKey,
   requireSessionId,
+  requireUsuario,
   authenticate,
   authenticateUser,
 };

@@ -6,9 +6,14 @@ const sesionSchema = new Schema(
     sessionIdHash: { type: String, required: true, unique: true },
     usuario: {
       type: Schema.Types.ObjectId,
-      ref: 'Usuario',
+      refPath: 'tipoUsuario',
       required: true,
       index: true,
+    },
+    tipoUsuario: {
+      type: String,
+      enum: ['Usuario', 'Cliente'],
+      default: 'Usuario',
     },
     expira: { type: Date, required: true, index: { expires: 0 } },
     activa: { type: Boolean, default: true },
