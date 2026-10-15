@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html class="light" lang="es">
+<head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>Kanview - <%= titulo %></title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "error-container": "#ffdad6",
+                        "on-secondary-container": "#5f6161",
+                        "outline": "#6e7979",
+                        "on-surface-variant": "#3e4949",
+                        "primary-fixed-dim": "#76d6d5",
+                        "surface-dim": "#dbdad9",
+                        "surface-tint": "#006a6a",
+                        "surface-container-lowest": "#ffffff",
+                        "on-secondary-fixed-variant": "#454747",
+                        "on-tertiary": "#ffffff",
+                        "on-tertiary-container": "#fff9f7",
+                        "on-error-container": "#93000a",
+                        "primary": "#006565",
+                        "on-secondary": "#ffffff",
+                        "on-secondary-fixed": "#1a1c1c",
+                        "surface-variant": "#e4e2e2",
+                        "tertiary-fixed-dim": "#ffb692",
+                        "primary-container": "#008080",
+                        "surface-container-low": "#f5f3f3",
+                        "background": "#fbf9f8",
+                        "surface": "#fbf9f8",
+                        "inverse-surface": "#303030",
+                        "on-tertiary-fixed": "#341100",
+                        "secondary-fixed-dim": "#c6c6c7",
+                        "on-background": "#1b1c1c",
+                        "on-primary-container": "#e3fffe",
+                        "surface-bright": "#fbf9f8",
+                        "error": "#ba1a1a",
+                        "on-error": "#ffffff",
+                        "on-surface": "#1b1c1c",
+                        "surface-container-high": "#eae8e7",
+                        "surface-container-highest": "#e4e2e2",
+                        "primary-fixed": "#93f2f2",
+                        "on-primary-fixed": "#002020",
+                        "outline-variant": "#bdc9c8",
+                        "on-primary": "#ffffff",
+                        "inverse-on-surface": "#f2f0f0",
+                        "secondary-container": "#dcdddd",
+                        "on-primary-fixed-variant": "#004f4f",
+                        "secondary-fixed": "#e2e2e2",
+                        "surface-container": "#efeded",
+                        "on-tertiary-fixed-variant": "#733512",
+                        "tertiary-fixed": "#ffdbcb",
+                        "tertiary-container": "#a96039",
+                        "secondary": "#5d5f5f",
+                        "inverse-primary": "#76d6d5",
+                        "tertiary": "#8b4823"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "card-gap": "24px",
+                        "container-padding-desktop": "40px",
+                        "base": "8px",
+                        "gutter": "24px",
+                        "section-margin": "64px",
+                        "container-padding-mobile": "20px"
+                    },
+                    "fontFamily": {
+                        "headline-lg-mobile": ["Inter"],
+                        "headline-md": ["Inter"],
+                        "body-lg": ["Inter"],
+                        "display": ["Inter"],
+                        "body-md": ["Inter"],
+                        "label-md": ["Inter"],
+                        "headline-lg": ["Inter"],
+                        "label-sm": ["Inter"]
+                    },
+                    "fontSize": {
+                        "headline-lg-mobile": ["24px", { "lineHeight": "32px", "fontWeight": "600" }],
+                        "headline-md": ["24px", { "lineHeight": "32px", "fontWeight": "600" }],
+                        "body-lg": ["18px", { "lineHeight": "28px", "fontWeight": "400" }],
+                        "display": ["48px", { "lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "body-md": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+                        "label-md": ["14px", { "lineHeight": "20px", "letterSpacing": "0.01em", "fontWeight": "500" }],
+                        "headline-lg": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.01em", "fontWeight": "600" }],
+                        "label-sm": ["12px", { "lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        body { background-color: #fbf9f8; }
+        .neomorphic-card {
+            background: #ffffff;
+            box-shadow: 8px 8px 16px rgba(0,0,0,0.03), -8px -8px 16px #FFFFFF;
+        }
+        .inner-shadow {
+            box-shadow: inset 2px 2px 5px rgba(0,0,0,0.05), inset -2px -2px 5px #ffffff;
+        }
+    </style>
+</head>
+<body class="font-body-md text-on-surface antialiased bg-background overflow-x-hidden min-h-screen">
+<!-- TopNavBar -->
+<nav class="fixed top-0 right-0 w-[calc(100%-16rem)] h-16 z-40 bg-background/80 backdrop-blur-md border-b border-outline-variant/30 hidden md:flex justify-between items-center px-container-padding-desktop">
+<div class="flex-1 max-w-md ml-64">
+<div class="relative inner-shadow rounded-full bg-surface-container-lowest flex items-center px-4 h-10 focus-within:ring-2 focus-within:ring-primary/20 transition-all">
+<span class="material-symbols-outlined text-on-surface-variant mr-2">search</span>
+<input class="w-full bg-transparent border-none focus:ring-0 text-body-md placeholder-on-surface-variant/50 p-0" placeholder="Buscar clientes..." type="text">
+</div>
+</div>
+<div class="flex items-center gap-4 text-primary font-headline-md text-headline-md">
+<button class="w-10 h-10 rounded-full hover:bg-surface-container-low flex items-center justify-center transition-all focus-within:ring-2 focus-within:ring-primary/20">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<button class="w-10 h-10 rounded-full hover:bg-surface-container-low flex items-center justify-center transition-all focus-within:ring-2 focus-within:ring-primary/20">
+<span class="material-symbols-outlined">chat_bubble</span>
+</button>
+<button class="w-10 h-10 rounded-full hover:bg-surface-container-low flex items-center justify-center transition-all focus-within:ring-2 focus-within:ring-primary/20">
+<span class="material-symbols-outlined">account_circle</span>
+</button>
+</div>
+</nav>
+<!-- SideNavBar -->
+<aside class="w-64 h-screen fixed left-0 top-0 shadow-[8px_8px_16px_rgba(0,0,0,0.03),-8px_-8px_16px_#FFFFFF] hidden md:flex flex-col py-base px-4 z-50 bg-primary-container text-on-primary">
+<div class="mb-8 px-4 flex items-center gap-3">
+<div class="w-10 h-10 rounded-full bg-primary-container flex items-center justify-center text-on-primary-container font-headline-md">K</div>
+<div>
+<h1 class="font-headline-md text-headline-md font-bold" style="opacity: 0;">Kanview</h1>
+<p class="font-label-sm text-label-sm text-on-primary/80">Manufactura Pro</p>
+</div>
+</div>
+<nav class="flex-1 overflow-y-auto space-y-1">
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg transition-colors duration-200 scale-95 active:scale-90 font-label-md text-label-md text-on-primary hover:bg-white/10" href="#">
+<span class="material-symbols-outlined font-light">dashboard</span>
+                Dashboard
+            </a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg transition-colors duration-200 scale-95 active:scale-90 font-label-md text-label-md text-on-primary hover:bg-white/10" href="/pedidos">
+<span class="material-symbols-outlined font-light">shopping_cart</span>
+                Pedidos
+            </a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg transition-colors duration-200 scale-95 active:scale-90 font-label-md text-label-md text-on-primary hover:bg-white/10" href="#">
+<span class="material-symbols-outlined font-light">inventory_2</span>
+                Inventario
+            </a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg transition-colors duration-200 scale-95 active:scale-90 font-label-md text-label-md text-on-primary hover:bg-white/10" href="#">
+<span class="material-symbols-outlined font-light">menu_book</span>
+                Catálogo
+            </a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg transition-colors duration-200 scale-95 active:scale-90 font-label-md text-label-md text-on-primary hover:bg-white/10" href="#">
+<span class="material-symbols-outlined font-light">assignment</span>
+                Tareas
+            </a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg transition-colors duration-200 scale-95 active:scale-90 font-label-md text-label-md text-on-primary hover:bg-white/10" href="#">
+<span class="material-symbols-outlined font-light">history</span>
+                Actividades
+            </a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg transition-colors duration-200 scale-95 active:scale-90 font-label-md text-label-md text-on-primary hover:bg-white/10" href="#">
+<span class="material-symbols-outlined font-light">calendar_today</span>
+                Calendario
+            </a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg transition-colors duration-200 scale-95 active:scale-90 font-label-md text-label-md text-on-primary hover:bg-white/10" href="/productos">
+<span class="material-symbols-outlined font-light">sell</span>
+                Productos
+            </a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg border-l-4 font-bold transition-colors duration-200 scale-95 active:scale-90 font-label-md text-label-md hover:bg-white/10 bg-white/20 border-white" href="/clientes">
+<span class="material-symbols-outlined">group</span>
+                Clientes
+            </a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg transition-colors duration-200 scale-95 active:scale-90 font-label-md text-label-md text-on-primary hover:bg-white/10" href="#">
+<span class="material-symbols-outlined font-light">payments</span>
+                Finanzas
+            </a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg transition-colors duration-200 scale-95 active:scale-90 font-label-md text-label-md mt-auto text-on-primary hover:bg-white/10" href="#">
+<span class="material-symbols-outlined font-light">settings</span>
+                Configuración
+            </a>
+<button class="flex w-full items-center gap-3 px-4 py-3 rounded-lg transition-colors duration-200 scale-95 active:scale-90 font-label-md text-label-md text-on-primary hover:bg-white/10" id="btn-logout-sidebar" type="button">
+<span class="material-symbols-outlined font-light">logout</span>
+                Cerrar sesión
+            </button>
+</nav>
+</aside>
+<!-- BottomNavBar (Mobile) -->
+<nav class="fixed bottom-6 right-6 w-auto h-12 rounded-full bg-primary text-on-primary flex items-center gap-2 px-6 shadow-[0_12px_24px_rgba(0,128,128,0.2)] md:hidden z-50">
+<span class="material-symbols-outlined">chat</span>
+<span class="font-label-md text-label-md">Soporte</span>
+</nav>
+<!-- Main Content -->
+<main class="md:ml-64 pt-20 pb-24 md:pb-10 px-container-padding-mobile md:px-container-padding-desktop max-w-[1440px] mx-auto min-h-screen">
+<!-- Header Section -->
+<div class="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
+<div>
+<h2 class="font-headline-lg-mobile md:font-headline-lg text-headline-lg-mobile md:text-headline-lg text-on-surface">Gestión de Clientes</h2>
+<p class="font-body-md text-body-md text-on-surface-variant mt-1">Administra la información de tus clientes.</p>
+</div>
+<button id="btn-agregar" class="bg-primary text-on-primary hover:brightness-110 px-6 py-3 rounded-[16px] font-label-md text-label-md flex items-center gap-2 transition-transform active:scale-95 shadow-[0_12px_24px_rgba(0,128,128,0.2)]">
+<span class="material-symbols-outlined">person_add</span>
+                Agregar Cliente
+            </button>
+</div>
+<!-- Clients Table Card -->
+<div class="neomorphic-card rounded-[24px] overflow-hidden relative">
+<!-- Wax Seal Watermark -->
+<svg class="absolute bottom-4 right-4 w-12 h-12 text-primary-container opacity-10 pointer-events-none" fill="currentColor" viewBox="0 0 24 24">
+<path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v6h-2zm0 8h2v2h-2z"></path>
+</svg>
+<div class="p-6 overflow-x-auto">
+<table class="w-full text-left border-collapse min-w-[900px]">
+<thead>
+<tr class="border-b border-surface-variant">
+<th class="py-4 px-4 font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Cliente</th>
+<th class="py-4 px-4 font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Documento</th>
+<th class="py-4 px-4 font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Dirección</th>
+<th class="py-4 px-4 font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Edad</th>
+<th class="py-4 px-4 font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Fecha de nacimiento</th>
+<th class="py-4 px-4 font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider text-right">Acciones</th>
+</tr>
+</thead>
+<tbody id="tabla-clientes" class="divide-y divide-surface-container-high/50 font-body-md text-body-md">
+<tr>
+<td class="py-10 text-center text-on-surface-variant" colspan="6">Cargando clientes...</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</main>
+
+<!-- Modal Crear / Editar Cliente -->
+<div id="modal-cliente" class="fixed inset-0 z-[70] hidden items-center justify-center bg-black/30 p-4">
+<div class="neomorphic-card rounded-[24px] w-full max-w-lg p-6">
+<div class="flex items-center justify-between mb-6">
+<h3 id="modal-titulo" class="font-headline-md text-headline-md text-on-surface">Agregar cliente</h3>
+<button id="btn-cerrar-modal" type="button" class="w-10 h-10 rounded-full hover:bg-surface-container-low flex items-center justify-center text-on-surface-variant hover:text-on-surface transition-colors">
+<span class="material-symbols-outlined">close</span>
+</button>
+</div>
+<form id="form-cliente" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+<input id="cliente-id" type="hidden">
+<div class="flex flex-col gap-2 md:col-span-2">
+<label class="font-label-md text-label-md text-on-surface" for="nombre">Nombre</label>
+<input class="w-full px-4 py-2.5 bg-surface-container-lowest border border-outline-variant rounded-xl text-on-surface focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all placeholder:text-outline/50" id="nombre" name="nombre" placeholder="Nombre completo" required type="text">
+</div>
+<div class="flex flex-col gap-2">
+<label class="font-label-md text-label-md text-on-surface" for="documento">Documento</label>
+<input class="w-full px-4 py-2.5 bg-surface-container-lowest border border-outline-variant rounded-xl text-on-surface focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all placeholder:text-outline/50" id="documento" name="documento" placeholder="CC / NIT" required type="text">
+</div>
+<div class="flex flex-col gap-2">
+<label class="font-label-md text-label-md text-on-surface" for="celular">Celular</label>
+<input class="w-full px-4 py-2.5 bg-surface-container-lowest border border-outline-variant rounded-xl text-on-surface focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all placeholder:text-outline/50" id="celular" name="celular" placeholder="300 000 0000" required type="tel">
+</div>
+<div class="flex flex-col gap-2 md:col-span-2">
+<label class="font-label-md text-label-md text-on-surface" for="direccion">Dirección</label>
+<input class="w-full px-4 py-2.5 bg-surface-container-lowest border border-outline-variant rounded-xl text-on-surface focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all placeholder:text-outline/50" id="direccion" name="direccion" placeholder="Dirección de residencia" required type="text">
+</div>
+<div class="flex flex-col gap-2">
+<label class="font-label-md text-label-md text-on-surface" for="edad">Edad</label>
+<input class="w-full px-4 py-2.5 bg-surface-container-lowest border border-outline-variant rounded-xl text-on-surface focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all placeholder:text-outline/50" id="edad" min="0" name="edad" placeholder="18" required type="number">
+</div>
+<div class="flex flex-col gap-2">
+<label class="font-label-md text-label-md text-on-surface" for="fechaNacimiento">Fecha de nacimiento</label>
+<input class="w-full px-4 py-2.5 bg-surface-container-lowest border border-outline-variant rounded-xl text-on-surface focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all" id="fechaNacimiento" name="fechaNacimiento" required type="date">
+</div>
+<div class="flex flex-col gap-2 md:col-span-2">
+<label class="font-label-md text-label-md text-on-surface" for="password">Contraseña</label>
+<input class="w-full px-4 py-2.5 bg-surface-container-lowest border border-outline-variant rounded-xl text-on-surface focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all placeholder:text-outline/50" autocomplete="new-password" id="password" name="password" placeholder="Mínimo 8 caracteres" type="password">
+</div>
+<div class="md:col-span-2 flex justify-end gap-3 mt-2">
+<button id="btn-cancelar" type="button" class="px-5 py-2.5 rounded-xl border border-outline-variant text-on-surface-variant hover:bg-surface-container-low transition-colors font-label-md text-label-md">
+                        Cancelar
+                    </button>
+<button type="submit" class="px-5 py-2.5 rounded-xl bg-primary text-on-primary hover:brightness-110 transition-all active:scale-95 font-label-md text-label-md">
+                        Guardar
+                    </button>
+</div>
+</form>
+</div>
+</div>
+
+<!-- Toast de notificaciones -->
+<div id="toast" class="hidden"></div>
+
+<script>
+        const token = localStorage.getItem('token');
+        let clientes = [];
+        let toastTimer;
+
+        const apiFetch = async (url, opciones = {}) => {
+            const respuesta = await fetch(url, {
+                ...opciones,
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${token}`,
+                    ...(opciones.headers || {}),
+                },
+            });
+
+            if (respuesta.status === 401) {
+                localStorage.removeItem('token');
+                window.location.replace('/login');
+                throw new Error('Sesión expirada');
+            }
+
+            const cuerpo = await respuesta.json().catch(() => ({}));
+
+            if (!respuesta.ok) {
+                throw new Error(cuerpo.message || 'Error al comunicarse con el servidor');
+            }
+
+            return cuerpo;
+        };
+
+        const escapeHtml = (valor) =>
+            String(valor ?? '')
+                .replaceAll('&', '&amp;')
+                .replaceAll('<', '&lt;')
+                .replaceAll('>', '&gt;')
+                .replaceAll('"', '&quot;')
+                .replaceAll("'", '&#39;');
+
+        const iniciales = (nombre) =>
+            String(nombre || '')
+                .trim()
+                .split(/\s+/)
+                .slice(0, 2)
+                .map((parte) => parte.charAt(0).toUpperCase())
+                .join('') || '?';
+
+        const formatearFecha = (fecha) => {
+            const fechaObj = new Date(fecha);
+            return Number.isNaN(fechaObj.getTime())
+                ? '—'
+                : fechaObj.toLocaleDateString('es-CO', { timeZone: 'UTC' });
+        };
+
+        const filaCliente = (cliente) => `
+            <tr class="hover:bg-surface-container-lowest hover:shadow-[0_4px_12px_rgba(0,0,0,0.05)] transition-all duration-200 group rounded-lg">
+                <td class="py-4 px-4">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-full bg-surface-container-high flex items-center justify-center text-on-surface-variant font-headline-md text-sm">${escapeHtml(iniciales(cliente.nombre))}</div>
+                        <div>
+                            <p class="font-medium text-on-surface">${escapeHtml(cliente.nombre)}</p>
+                            <p class="font-label-sm text-label-sm text-on-surface-variant">${escapeHtml(cliente.celular)}</p>
+                        </div>
+                    </div>
+                </td>
+                <td class="py-4 px-4">${escapeHtml(cliente.documento)}</td>
+                <td class="py-4 px-4">${escapeHtml(cliente.direccion)}</td>
+                <td class="py-4 px-4">${escapeHtml(cliente.edad)}</td>
+                <td class="py-4 px-4">${escapeHtml(formatearFecha(cliente.fechaNacimiento))}</td>
+                <td class="py-4 px-4 text-right">
+                    <div class="flex items-center justify-end gap-1">
+                        <button class="text-on-surface-variant hover:text-primary transition-colors p-2" data-accion="editar" data-id="${escapeHtml(cliente._id)}" title="Editar">
+                            <span class="material-symbols-outlined text-[20px]">edit</span>
+                        </button>
+                        <button class="text-on-surface-variant hover:text-error transition-colors p-2" data-accion="eliminar" data-id="${escapeHtml(cliente._id)}" title="Eliminar">
+                            <span class="material-symbols-outlined text-[20px]">delete</span>
+                        </button>
+                    </div>
+                </td>
+            </tr>`;
+
+        const renderizarClientes = () => {
+            const tbody = document.getElementById('tabla-clientes');
+
+            if (clientes.length === 0) {
+                tbody.innerHTML = '<tr><td class="py-10 text-center text-on-surface-variant" colspan="6">No hay clientes registrados.</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = clientes.map(filaCliente).join('');
+        };
+
+        const mostrarToast = (mensaje, esError = false) => {
+            const toast = document.getElementById('toast');
+            toast.textContent = mensaje;
+            toast.className = `fixed bottom-6 left-1/2 -translate-x-1/2 z-[80] px-6 py-3 rounded-full font-label-md text-label-md shadow-lg ${esError ? 'bg-error text-on-error' : 'bg-primary text-on-primary'}`;
+
+            clearTimeout(toastTimer);
+            toastTimer = setTimeout(() => toast.classList.add('hidden'), 3000);
+        };
+
+        const cargarClientes = async () => {
+            try {
+                const respuesta = await apiFetch('/api/clientes');
+                clientes = respuesta.data || [];
+                renderizarClientes();
+            } catch (error) {
+                mostrarToast(error.message, true);
+            }
+        };
+
+        const modal = document.getElementById('modal-cliente');
+        const form = document.getElementById('form-cliente');
+
+        const abrirModal = (cliente = null) => {
+            form.reset();
+            document.getElementById('cliente-id').value = cliente ? cliente._id : '';
+            document.getElementById('modal-titulo').textContent = cliente ? 'Editar cliente' : 'Agregar cliente';
+
+            const campoPassword = document.getElementById('password');
+            campoPassword.required = !cliente;
+            campoPassword.placeholder = cliente ? 'Dejar en blanco para mantener' : 'Mínimo 8 caracteres';
+
+            if (cliente) {
+                document.getElementById('nombre').value = cliente.nombre ?? '';
+                document.getElementById('documento').value = cliente.documento ?? '';
+                document.getElementById('celular').value = cliente.celular ?? '';
+                document.getElementById('direccion').value = cliente.direccion ?? '';
+                document.getElementById('edad').value = cliente.edad ?? '';
+                document.getElementById('fechaNacimiento').value = String(cliente.fechaNacimiento ?? '').slice(0, 10);
+            }
+
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        };
+
+        const cerrarModal = () => {
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        };
+
+        form.addEventListener('submit', async (evento) => {
+            evento.preventDefault();
+
+            const id = document.getElementById('cliente-id').value;
+
+            const datos = {
+                nombre: document.getElementById('nombre').value.trim(),
+                documento: document.getElementById('documento').value.trim(),
+                celular: document.getElementById('celular').value.trim(),
+                direccion: document.getElementById('direccion').value.trim(),
+                edad: Number(document.getElementById('edad').value),
+                fechaNacimiento: document.getElementById('fechaNacimiento').value,
+            };
+
+            const password = document.getElementById('password').value;
+            if (password) datos.password = password;
+
+            try {
+                if (id) {
+                    await apiFetch(`/api/clientes/${id}`, { method: 'PUT', body: JSON.stringify(datos) });
+                    mostrarToast('Cliente actualizado correctamente');
+                } else {
+                    await apiFetch('/api/clientes', { method: 'POST', body: JSON.stringify(datos) });
+                    mostrarToast('Cliente creado correctamente');
+                }
+
+                cerrarModal();
+                await cargarClientes();
+            } catch (error) {
+                mostrarToast(error.message, true);
+            }
+        });
+
+        document.getElementById('btn-agregar').addEventListener('click', () => abrirModal());
+        document.getElementById('btn-cerrar-modal').addEventListener('click', cerrarModal);
+        document.getElementById('btn-cancelar').addEventListener('click', cerrarModal);
+        modal.addEventListener('click', (evento) => {
+            if (evento.target === modal) cerrarModal();
+        });
+        document.addEventListener('keydown', (evento) => {
+            if (evento.key === 'Escape') cerrarModal();
+        });
+
+        document.getElementById('tabla-clientes').addEventListener('click', async (evento) => {
+            const boton = evento.target.closest('button[data-accion]');
+            if (!boton) return;
+
+            const cliente = clientes.find((item) => item._id === boton.dataset.id);
+            if (!cliente) return;
+
+            if (boton.dataset.accion === 'editar') {
+                abrirModal(cliente);
+                return;
+            }
+
+            const confirmado = window.confirm(`¿Eliminar a ${cliente.nombre}? Esta acción no se puede deshacer.`);
+            if (!confirmado) return;
+
+            try {
+                await apiFetch(`/api/clientes/${cliente._id}`, { method: 'DELETE' });
+                mostrarToast('Cliente eliminado correctamente');
+                await cargarClientes();
+            } catch (error) {
+                mostrarToast(error.message, true);
+            }
+        });
+
+        document.getElementById('btn-logout-sidebar').addEventListener('click', async () => {
+            try {
+                await apiFetch('/api/auth/logout', { method: 'POST' });
+            } catch (error) {
+                console.warn('No se pudo cerrar la sesión en el servidor:', error.message);
+            }
+
+            localStorage.removeItem('token');
+            localStorage.removeItem('tipo');
+            localStorage.removeItem('nombre');
+            window.location.replace('/login');
+        });
+
+        if (!token) {
+            window.location.replace('/login');
+        } else if (localStorage.getItem('tipo') === 'Cliente') {
+            window.location.replace('/pedidos');
+        } else {
+            cargarClientes();
+        }
+    </script>
+</body>
+</html>

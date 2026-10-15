@@ -4,7 +4,7 @@ const { Schema } = mongoose;
 const productoSchema = new Schema(
   {
     nombre: { type: String, required: true },
-    codigoProducto: { type: String, required: true },
+    codigoProducto: { type: String, required: true, unique: true, trim: true },
     descripcion: { type: String, required: true },
     categoria: { type: String, enum: ['Oficina', 'Industrial', 'Hogar', 'Automoviles'], required: [true, "Digita una opción válida"] },
     precio: { type: Schema.Types.Decimal128, required: true },

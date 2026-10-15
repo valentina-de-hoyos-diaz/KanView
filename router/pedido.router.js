@@ -7,11 +7,12 @@ const {
   updatePedido,
   deletePedido,
 } = require('../controllers/pedido.controller');
+const { requireUsuario } = require('../middleware/autenticacion.middleware');
 
 router.get('/', getPedidos);
 router.get('/:id', getPedidoById);
 router.post('/', createPedido);
-router.put('/:id', updatePedido);
-router.delete('/:id', deletePedido);
+router.put('/:id', requireUsuario, updatePedido);
+router.delete('/:id', requireUsuario, deletePedido);
 
 module.exports = router;
