@@ -5,8 +5,9 @@
   "main": "index.js",
   "scripts": {
     "test": "node --test",
-    "dev": "nodemon index.js",
+    "dev": "nodemon --ignore \"services/*.archive.gz\" --ignore \"*.log\" index.js",
     "start": "pm2 start index.js",
+    "backup": "node services/backup.js --once",
     "build": "echo 'Construyendo'"
   },
   "keywords": [],
