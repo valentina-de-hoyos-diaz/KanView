@@ -1,3 +1,6 @@
-node_modules
+node_modules/
 .env
-archivo.log
+*.archive.gz
+*.tar.gz
+backup/
+*.log

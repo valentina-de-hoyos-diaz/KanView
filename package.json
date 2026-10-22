@@ -6,7 +6,7 @@
   "scripts": {
     "test": "node --test",
     "dev": "nodemon index.js",
-    "start": "node index.js",
+    "start": "pm2 start index.js",
     "build": "echo 'Construyendo'"
   },
   "keywords": [],
@@ -21,6 +21,8 @@
     "fs": "^0.0.1-security",
     "jsonwebtoken": "^9.0.3",
     "mongoose": "^9.8.1",
+    "node-cron": "^4.6.0",
+    "nodemailer": "^10.2.0",
     "path": "^0.12.7"
   },
   "devDependencies": {
