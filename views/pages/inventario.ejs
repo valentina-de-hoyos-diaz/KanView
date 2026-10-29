@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html class="light" lang="es">
+<head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>Kanview - <%= titulo %></title>
+<script nonce="<%= cspNonce %>" src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script nonce="<%= cspNonce %>">tailwind.config={theme:{extend:{colors:{primary:'#006565','primary-container':'#008080','on-primary':'#ffffff',background:'#fbf9f8','on-surface':'#1b1c1c','on-surface-variant':'#3e4949','surface-container-low':'#f5f3f3','surface-container-lowest':'#ffffff','surface-container-high':'#eae8e7','outline-variant':'#bdc9c8',error:'#ba1a1a'},fontFamily:{sans:['Inter']}}}};</script>
+<style>body{background:#fbf9f8;font-family:'Inter',sans-serif}.card{background:#fff;box-shadow:8px 8px 16px rgba(0,0,0,.03),-8px -8px 16px #fff}.material-symbols-outlined{font-variation-settings:'FILL' 0,'wght' 300,'GRAD' 0,'opsz' 24}</style>
+</head>
+<body class="text-on-surface min-h-screen">
+<%- include('../partials/sidebar') %>
+
+<main class="md:ml-64 p-5 md:p-10 max-w-[1440px] mx-auto">
+  <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-7">
+    <div><h2 class="text-3xl font-semibold">Inventario</h2><p class="text-on-surface-variant mt-1">Existencias, agotados y alertas de stock bajo.</p></div>
+    <a class="bg-primary text-on-primary px-6 py-3 rounded-2xl text-sm font-medium flex items-center justify-center gap-2" href="/productos"><span class="material-symbols-outlined">edit</span>Gestionar productos</a>
+  </div>
+  <div id="error" class="hidden mb-5 bg-red-50 border border-red-200 text-error text-sm px-4 py-3 rounded-xl"></div>
+  <section class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-4 mb-6">
+    <article class="card rounded-2xl p-5"><p class="text-sm text-on-surface-variant">Productos activos</p><p class="text-2xl font-bold mt-2" id="total-productos">—</p></article>
+    <article class="card rounded-2xl p-5"><p class="text-sm text-on-surface-variant">Unidades</p><p class="text-2xl font-bold mt-2" id="total-unidades">—</p></article>
+    <article class="card rounded-2xl p-5"><p class="text-sm text-on-surface-variant">Agotados</p><p class="text-2xl font-bold mt-2 text-red-700" id="agotados">—</p></article>
+    <article class="card rounded-2xl p-5"><p class="text-sm text-on-surface-variant">Stock bajo</p><p class="text-2xl font-bold mt-2 text-amber-700" id="stock-bajo">—</p></article>
+    <article class="card rounded-2xl p-5"><p class="text-sm text-on-surface-variant">Valor inventario</p><p class="text-2xl font-bold mt-2" id="valor-inventario">—</p></article>
+  </section>
+  <div class="flex flex-col md:flex-row gap-3 mb-4">
+    <div class="relative flex-1"><span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-[20px]">search</span><input class="w-full pl-10 pr-4 py-2.5 rounded-xl border border-outline-variant bg-white text-sm" id="buscador" placeholder="Buscar producto, código o categoría"></div>
+    <select class="px-4 py-2.5 rounded-xl border border-outline-variant bg-white text-sm" id="filtro-estado"><option value="">Todos los estados</option><option value="agotado">Agotados</option><option value="bajo">Stock bajo</option><option value="disponible">Disponibles</option><option value="inactivo">Inactivos</option></select>
+    <select class="px-4 py-2.5 rounded-xl border border-outline-variant bg-white text-sm" id="filtro-categoria"><option value="">Todas las categorías</option></select>
+  </div>
+  <div class="card rounded-2xl overflow-x-auto">
+    <table class="w-full text-left text-sm min-w-[850px]">
+      <thead class="text-xs uppercase tracking-wide text-on-surface-variant border-b border-outline-variant/40"><tr><th class="py-4 px-4">Producto</th><th class="py-4 px-4">Categoría</th><th class="py-4 px-4">Código</th><th class="py-4 px-4">Stock</th><th class="py-4 px-4">Estado</th><th class="py-4 px-4">Valor</th></tr></thead>
+      <tbody id="tabla-inventario" class="divide-y divide-outline-variant/20"><tr><td class="py-10 text-center text-on-surface-variant" colspan="6">Cargando inventario...</td></tr></tbody>
+    </table>
+  </div>
+</main>
+
+<script nonce="<%= cspNonce %>">
+const token = localStorage.getItem('token');
+const rol = localStorage.getItem('rol') || '';
+const tipo = localStorage.getItem('tipo') || 'Usuario';
+const UMBRAL_BAJO = 5;
+let productos = [];
+let resumen = null;
+
+const escapeHtml = (valor) => String(valor ?? '').replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('"', '&quot;').replaceAll("'", '&#39;');
+const mostrarError = (mensaje) => { const el = document.getElementById('error'); el.textContent = mensaje; el.classList.remove('hidden'); };
+const numero = (valor) => Number(valor && valor.$numberDecimal ? valor.$numberDecimal : valor || 0);
+const moneda = (valor) => Number(valor || 0).toLocaleString('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const categoriaLabel = (valor) => ({ tela: 'Tela', espuma: 'Espuma', madera: 'Madera', herraje: 'Herraje', hilo: 'Hilo', otro: 'Otro', Oficina: 'Oficina', Industrial: 'Industrial', Hogar: 'Hogar', Automoviles: 'Automóviles' }[valor] || valor || 'Sin categoría');
+
+const apiFetch = async (url) => {
+  const respuesta = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+  if (respuesta.status === 401) { localStorage.clear(); window.location.replace('/login'); throw new Error('Sesión expirada'); }
+  const cuerpo = await respuesta.json().catch(() => ({}));
+  if (!respuesta.ok) throw new Error(cuerpo.message || 'Error del servidor');
+  return cuerpo;
+};
+
+const estadoDe = (producto) => {
+  if (producto.activo === false) return { clave: 'inactivo', texto: 'Inactivo', clases: 'bg-slate-100 text-slate-600' };
+  if (Number(producto.stock) <= 0) return { clave: 'agotado', texto: 'Agotado', clases: 'bg-red-50 text-error' };
+  if (Number(producto.stock) <= UMBRAL_BAJO) return { clave: 'bajo', texto: 'Stock bajo', clases: 'bg-amber-50 text-amber-700' };
+  return { clave: 'disponible', texto: 'Disponible', clases: 'bg-emerald-50 text-emerald-700' };
+};
+
+const renderizar = () => {
+  const texto = document.getElementById('buscador').value.trim().toLowerCase();
+  const estado = document.getElementById('filtro-estado').value;
+  const categoria = document.getElementById('filtro-categoria').value;
+  const visibles = productos.filter((producto) => {
+    const coincideTexto = !texto || `${producto.nombre} ${producto.codigoProducto} ${producto.categoria}`.toLowerCase().includes(texto);
+    const coincideCategoria = !categoria || producto.categoria === categoria;
+    return coincideTexto && coincideCategoria && (!estado || estadoDe(producto).clave === estado);
+  });
+
+  const tbody = document.getElementById('tabla-inventario');
+  if (!visibles.length) {
+    tbody.innerHTML = '<tr><td class="py-10 text-center text-on-surface-variant" colspan="6">No hay productos que coincidan.</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = visibles.map((producto) => {
+    const estadoProducto = estadoDe(producto);
+    return `<tr class="hover:bg-surface-container-low/60">
+      <td class="py-3 px-4"><p class="font-medium">${escapeHtml(producto.nombre)}</p><p class="text-xs text-on-surface-variant">${escapeHtml(producto.descripcion || '')}</p></td>
+      <td class="py-3 px-4">${escapeHtml(categoriaLabel(producto.categoria))}</td>
+      <td class="py-3 px-4">${escapeHtml(producto.codigoProducto)}</td>
+      <td class="py-3 px-4 font-semibold">${escapeHtml(producto.stock)}</td>
+      <td class="py-3 px-4"><span class="px-2 py-1 rounded-full text-xs font-semibold ${estadoProducto.clases}">${estadoProducto.texto}</span></td>
+      <td class="py-3 px-4">${moneda(numero(producto.precio) * Number(producto.stock || 0))}</td>
+    </tr>`;
+  }).join('');
+};
+
+const cargar = async () => {
+  try {
+    const [respuestaResumen, respuestaProductos] = await Promise.all([
+      apiFetch('/api/inventario/resumen'),
+      apiFetch('/api/productos?incluirInactivos=true&limite=200'),
+    ]);
+    resumen = respuestaResumen.data;
+    productos = respuestaProductos.data || [];
+
+    document.getElementById('total-productos').textContent = resumen.totalProductos;
+    document.getElementById('total-unidades').textContent = resumen.unidades;
+    document.getElementById('agotados').textContent = resumen.agotados;
+    document.getElementById('stock-bajo').textContent = resumen.stockBajo;
+    document.getElementById('valor-inventario').textContent = moneda(resumen.valorInventario);
+
+    const categorias = [...new Set(productos.map((producto) => producto.categoria).filter(Boolean))];
+    document.getElementById('filtro-categoria').innerHTML = '<option value="">Todas las categorías</option>' + categorias.map((valor) => `<option value="${escapeHtml(valor)}">${escapeHtml(categoriaLabel(valor))}</option>`).join('');
+    renderizar();
+  } catch (error) { mostrarError(error.message); }
+};
+
+['buscador', 'filtro-estado', 'filtro-categoria'].forEach((id) => {
+  document.getElementById(id).addEventListener(id === 'buscador' ? 'input' : 'change', renderizar);
+});
+document.getElementById('btn-logout-sidebar').addEventListener('click', async () => {
+  try { await fetch('/api/auth/logout', { method: 'POST', headers: { Authorization: `Bearer ${token}` } }); } catch (error) { console.warn(error.message); }
+  localStorage.clear(); window.location.replace('/login');
+});
+
+if (!token) window.location.replace('/login');
+else if (tipo === 'Cliente') window.location.replace('/catalogo');
+else cargar();
+</script>
+</body>
+</html>

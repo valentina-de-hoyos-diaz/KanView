@@ -7,11 +7,12 @@ const {
   updateCliente,
   deleteCliente,
 } = require('../controllers/cliente.controller');
+const { requireAdminOrSecretaria } = require('../middleware/autenticacion.middleware');
 
 router.get('/', getClientes);
 router.get('/:id', getClienteById);
-router.post('/', createCliente);
-router.put('/:id', updateCliente);
-router.delete('/:id', deleteCliente);
+router.post('/', requireAdminOrSecretaria, createCliente);
+router.put('/:id', requireAdminOrSecretaria, updateCliente);
+router.delete('/:id', requireAdminOrSecretaria, deleteCliente);
 
 module.exports = router;

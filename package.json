@@ -6,7 +6,10 @@
   "scripts": {
     "test": "node --test",
     "dev": "nodemon index.js",
-    "start": "pm2 start index.js",
+    "start": "node index.js",
+    "start:pm2": "pm2 start index.js",
+    "admin:crear": "node scripts/crear-admin.js",
+    "db:indices": "node scripts/crear-indices.js",
     "build": "echo 'Construyendo'"
   },
   "keywords": [],
@@ -22,8 +25,9 @@
     "jsonwebtoken": "^9.0.3",
     "mongoose": "^9.8.1",
     "node-cron": "^4.6.0",
-    "nodemailer": "^10.2.0",
-    "path": "^0.12.7"
+    "nodemailer": "^10.2.1",
+    "path": "^0.12.7",
+    "ws": "^8.22.0"
   },
   "devDependencies": {
     "nodemon": "^3.1.14"

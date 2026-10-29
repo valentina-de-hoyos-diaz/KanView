@@ -23,6 +23,8 @@ const sesionSchema = new Schema(
   { collection: 'sesiones', timestamps: true }
 );
 
+sesionSchema.index({ usuario: 1, activa: 1, expira: 1 });
+
 sesionSchema.methods.toJSON = function () {
   const sesion = this.toObject();
   delete sesion.sessionIdHash;

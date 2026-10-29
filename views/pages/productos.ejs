@@ -4,10 +4,10 @@
 <meta charset="utf-8">
 <meta content="width=device-width, initial-scale=1.0" name="viewport">
 <title>Kanview - <%= titulo %></title>
-<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script nonce="<%= cspNonce %>" src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
 <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
-<script id="tailwind-config">
+<script nonce="<%= cspNonce %>" id="tailwind-config">
         tailwind.config = {
             darkMode: "class",
             theme: {
@@ -111,65 +111,7 @@
 </head>
 <body class="bg-surface text-on-surface font-body-md min-h-screen flex antialiased">
 <!-- SideNavBar -->
-<aside class="w-64 h-screen fixed left-0 top-0 shadow-[8px_8px_16px_rgba(0,0,0,0.03),-8px_-8px_16px_#FFFFFF] hidden md:flex flex-col py-base px-4 z-50 bg-primary-container text-on-primary">
-<div class="mb-8 px-4 flex items-center gap-3">
-<div class="w-10 h-10 rounded-full bg-primary-container flex items-center justify-center text-on-primary-container font-headline-md">K</div>
-<div>
-<h1 class="font-headline-md text-headline-md font-bold" style="opacity: 0;">Kanview</h1>
-<p class="font-label-sm text-label-sm text-on-primary/80">Manufactura Pro</p>
-</div>
-</div>
-<nav class="flex-1 overflow-y-auto space-y-1">
-<a data-solo-admin class="flex items-center gap-3 px-4 py-3 rounded-lg transition-colors duration-200 scale-95 active:scale-90 font-label-md text-label-md text-on-primary hover:bg-white/10" href="#">
-<span class="material-symbols-outlined font-light">dashboard</span>
-                Dashboard
-            </a>
-<a class="flex items-center gap-3 px-4 py-3 rounded-lg transition-colors duration-200 scale-95 active:scale-90 font-label-md text-label-md text-on-primary hover:bg-white/10" href="/pedidos">
-<span class="material-symbols-outlined font-light">shopping_cart</span>
-                Pedidos
-            </a>
-<a data-solo-admin class="flex items-center gap-3 px-4 py-3 rounded-lg transition-colors duration-200 scale-95 active:scale-90 font-label-md text-label-md text-on-primary hover:bg-white/10" href="#">
-<span class="material-symbols-outlined font-light">inventory_2</span>
-                Inventario
-            </a>
-<a data-solo-admin class="flex items-center gap-3 px-4 py-3 rounded-lg transition-colors duration-200 scale-95 active:scale-90 font-label-md text-label-md text-on-primary hover:bg-white/10" href="#">
-<span class="material-symbols-outlined font-light">menu_book</span>
-                Catálogo
-            </a>
-<a data-solo-admin class="flex items-center gap-3 px-4 py-3 rounded-lg transition-colors duration-200 scale-95 active:scale-90 font-label-md text-label-md text-on-primary hover:bg-white/10" href="#">
-<span class="material-symbols-outlined font-light">assignment</span>
-                Tareas
-            </a>
-<a data-solo-admin class="flex items-center gap-3 px-4 py-3 rounded-lg transition-colors duration-200 scale-95 active:scale-90 font-label-md text-label-md text-on-primary hover:bg-white/10" href="#">
-<span class="material-symbols-outlined font-light">history</span>
-                Actividades
-            </a>
-<a data-solo-admin class="flex items-center gap-3 px-4 py-3 rounded-lg transition-colors duration-200 scale-95 active:scale-90 font-label-md text-label-md text-on-primary hover:bg-white/10" href="#">
-<span class="material-symbols-outlined font-light">calendar_today</span>
-                Calendario
-            </a>
-<a class="flex items-center gap-3 px-4 py-3 rounded-lg border-l-4 font-bold transition-colors duration-200 scale-95 active:scale-90 font-label-md text-label-md hover:bg-white/10 bg-white/20 border-white" href="/productos">
-<span class="material-symbols-outlined">sell</span>
-                Productos
-            </a>
-<a data-solo-admin class="flex items-center gap-3 px-4 py-3 rounded-lg transition-colors duration-200 scale-95 active:scale-90 font-label-md text-label-md text-on-primary hover:bg-white/10" href="/clientes">
-<span class="material-symbols-outlined font-light">group</span>
-                Clientes
-            </a>
-<a data-solo-admin class="flex items-center gap-3 px-4 py-3 rounded-lg transition-colors duration-200 scale-95 active:scale-90 font-label-md text-label-md text-on-primary hover:bg-white/10" href="#">
-<span class="material-symbols-outlined font-light">payments</span>
-                Finanzas
-            </a>
-<a data-solo-admin class="flex items-center gap-3 px-4 py-3 rounded-lg transition-colors duration-200 scale-95 active:scale-90 font-label-md text-label-md mt-auto text-on-primary hover:bg-white/10" href="#">
-<span class="material-symbols-outlined font-light">settings</span>
-                Configuración
-            </a>
-<button class="flex w-full items-center gap-3 px-4 py-3 rounded-lg transition-colors duration-200 scale-95 active:scale-90 font-label-md text-label-md text-on-primary hover:bg-white/10" id="btn-logout-sidebar" type="button">
-<span class="material-symbols-outlined font-light">logout</span>
-                Cerrar sesión
-            </button>
-</nav>
-</aside>
+<%- include('../partials/sidebar') %>
 <!-- TopNavBar -->
 <header class="hidden md:flex justify-between items-center px-container-padding-desktop w-[calc(100%-16rem)] ml-64 fixed top-0 right-0 h-16 z-40 bg-background/80 backdrop-blur-md border-b border-outline-variant/30">
 <div class="flex-1 flex items-center">
@@ -233,10 +175,16 @@
 <label class="font-label-md text-label-md text-on-surface" for="producto-categoria">Categoría</label>
 <select class="w-full px-4 py-2.5 bg-surface-container-lowest border border-outline-variant rounded-xl text-on-surface focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all" id="producto-categoria" required>
 <option value="">Selecciona una categoría</option>
-<option value="Oficina">Oficina</option>
-<option value="Industrial">Industrial</option>
-<option value="Hogar">Hogar</option>
-<option value="Automoviles">Automóviles</option>
+<option value="tela">Tela</option>
+<option value="espuma">Espuma</option>
+<option value="madera">Madera</option>
+<option value="herraje">Herraje</option>
+<option value="hilo">Hilo</option>
+<option value="otro">Otro</option>
+<option value="Oficina">Oficina (categoría anterior)</option>
+<option value="Industrial">Industrial (categoría anterior)</option>
+<option value="Hogar">Hogar (categoría anterior)</option>
+<option value="Automoviles">Automóviles (categoría anterior)</option>
 </select>
 </div>
 <div class="flex flex-col gap-2 md:col-span-2">
@@ -264,14 +212,21 @@
 </div>
 <!-- Toast de notificaciones -->
 <div class="hidden" id="toast"></div>
-<script>
+<script nonce="<%= cspNonce %>">
         const token = localStorage.getItem('token');
         const tipo = localStorage.getItem('tipo');
         const esCliente = tipo === 'Cliente';
         let productos = [];
+        let filtroTexto = '';
         let toastTimer;
 
         const CATEGORIA_CLASES = {
+            tela: 'bg-primary-container/10 text-primary',
+            espuma: 'bg-tertiary-fixed text-on-tertiary-fixed',
+            madera: 'bg-amber-50 text-amber-700',
+            herraje: 'bg-slate-100 text-slate-700',
+            hilo: 'bg-secondary-container text-on-secondary-container',
+            otro: 'bg-surface-container-highest text-on-surface-variant',
             Oficina: 'bg-primary-container/10 text-primary',
             Industrial: 'bg-tertiary-fixed text-on-tertiary-fixed',
             Hogar: 'bg-secondary-container text-on-secondary-container',
@@ -325,7 +280,7 @@
             const numero = Number(valor);
 
             return Number.isFinite(numero)
-                ? numero.toLocaleString('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 2 })
+                ? numero.toLocaleString('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 2, maximumFractionDigits: 2 })
                 : '—';
         };
 
@@ -348,22 +303,34 @@
                 <p class="font-label-sm text-label-sm text-on-surface-variant mt-1 flex-1">${escapeHtml(producto.descripcion)}</p>
                 <div class="flex items-center justify-between mt-4 pt-4 border-t border-outline-variant/30">
                     <span class="font-label-md text-label-md text-on-surface font-semibold">${escapeHtml(precioTexto(producto.precio))}</span>
+                    ${esCliente ? `
+                    <span class="flex items-center gap-1 font-label-sm text-label-sm ${producto.disponible ? 'text-emerald-700' : 'text-error'}">
+                        <span class="material-symbols-outlined text-[16px]">${producto.disponible ? 'check_circle' : 'cancel'}</span>
+                        ${producto.disponible ? 'Disponible' : 'Agotado'}
+                    </span>` : `
                     <span class="flex items-center gap-1 font-label-sm text-label-sm ${producto.stock > 0 ? 'text-on-surface-variant' : 'text-error'}">
                         <span class="material-symbols-outlined text-[16px]">inventory_2</span>
                         ${escapeHtml(producto.stock)} un.
-                    </span>
+                    </span>`}
                 </div>
             </article>`;
 
         const renderizarProductos = () => {
             const grid = document.getElementById('grid-productos');
+            const texto = filtroTexto.toLowerCase();
+            const visibles = productos.filter((producto) =>
+                !texto ||
+                String(producto.nombre || '').toLowerCase().includes(texto) ||
+                String(producto.codigoProducto || '').toLowerCase().includes(texto) ||
+                String(producto.descripcion || '').toLowerCase().includes(texto)
+            );
 
-            if (productos.length === 0) {
-                grid.innerHTML = '<p class="text-center font-body-md text-body-md text-on-surface-variant py-16 sm:col-span-2 xl:col-span-3">No hay productos registrados.</p>';
+            if (visibles.length === 0) {
+                grid.innerHTML = '<p class="text-center font-body-md text-body-md text-on-surface-variant py-16 sm:col-span-2 xl:col-span-3">No hay productos que coincidan con la búsqueda.</p>';
                 return;
             }
 
-            grid.innerHTML = productos.map(tarjetaProducto).join('');
+            grid.innerHTML = visibles.map(tarjetaProducto).join('');
         };
 
         const cargarProductos = async () => {
@@ -375,6 +342,11 @@
                 mostrarToast(error.message, true);
             }
         };
+
+        document.getElementById('buscador-productos').addEventListener('input', (evento) => {
+            filtroTexto = evento.target.value.trim();
+            renderizarProductos();
+        });
 
         document.getElementById('grid-productos').addEventListener('click', async (evento) => {
             const boton = evento.target.closest('button[data-accion]');

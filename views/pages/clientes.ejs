@@ -4,10 +4,10 @@
 <meta charset="utf-8">
 <meta content="width=device-width, initial-scale=1.0" name="viewport">
 <title>Kanview - <%= titulo %></title>
-<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script nonce="<%= cspNonce %>" src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
 <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
-<script id="tailwind-config">
+<script nonce="<%= cspNonce %>" id="tailwind-config">
         tailwind.config = {
             darkMode: "class",
             theme: {
@@ -132,65 +132,7 @@
 </div>
 </nav>
 <!-- SideNavBar -->
-<aside class="w-64 h-screen fixed left-0 top-0 shadow-[8px_8px_16px_rgba(0,0,0,0.03),-8px_-8px_16px_#FFFFFF] hidden md:flex flex-col py-base px-4 z-50 bg-primary-container text-on-primary">
-<div class="mb-8 px-4 flex items-center gap-3">
-<div class="w-10 h-10 rounded-full bg-primary-container flex items-center justify-center text-on-primary-container font-headline-md">K</div>
-<div>
-<h1 class="font-headline-md text-headline-md font-bold" style="opacity: 0;">Kanview</h1>
-<p class="font-label-sm text-label-sm text-on-primary/80">Manufactura Pro</p>
-</div>
-</div>
-<nav class="flex-1 overflow-y-auto space-y-1">
-<a class="flex items-center gap-3 px-4 py-3 rounded-lg transition-colors duration-200 scale-95 active:scale-90 font-label-md text-label-md text-on-primary hover:bg-white/10" href="#">
-<span class="material-symbols-outlined font-light">dashboard</span>
-                Dashboard
-            </a>
-<a class="flex items-center gap-3 px-4 py-3 rounded-lg transition-colors duration-200 scale-95 active:scale-90 font-label-md text-label-md text-on-primary hover:bg-white/10" href="/pedidos">
-<span class="material-symbols-outlined font-light">shopping_cart</span>
-                Pedidos
-            </a>
-<a class="flex items-center gap-3 px-4 py-3 rounded-lg transition-colors duration-200 scale-95 active:scale-90 font-label-md text-label-md text-on-primary hover:bg-white/10" href="#">
-<span class="material-symbols-outlined font-light">inventory_2</span>
-                Inventario
-            </a>
-<a class="flex items-center gap-3 px-4 py-3 rounded-lg transition-colors duration-200 scale-95 active:scale-90 font-label-md text-label-md text-on-primary hover:bg-white/10" href="#">
-<span class="material-symbols-outlined font-light">menu_book</span>
-                Catálogo
-            </a>
-<a class="flex items-center gap-3 px-4 py-3 rounded-lg transition-colors duration-200 scale-95 active:scale-90 font-label-md text-label-md text-on-primary hover:bg-white/10" href="#">
-<span class="material-symbols-outlined font-light">assignment</span>
-                Tareas
-            </a>
-<a class="flex items-center gap-3 px-4 py-3 rounded-lg transition-colors duration-200 scale-95 active:scale-90 font-label-md text-label-md text-on-primary hover:bg-white/10" href="#">
-<span class="material-symbols-outlined font-light">history</span>
-                Actividades
-            </a>
-<a class="flex items-center gap-3 px-4 py-3 rounded-lg transition-colors duration-200 scale-95 active:scale-90 font-label-md text-label-md text-on-primary hover:bg-white/10" href="#">
-<span class="material-symbols-outlined font-light">calendar_today</span>
-                Calendario
-            </a>
-<a class="flex items-center gap-3 px-4 py-3 rounded-lg transition-colors duration-200 scale-95 active:scale-90 font-label-md text-label-md text-on-primary hover:bg-white/10" href="/productos">
-<span class="material-symbols-outlined font-light">sell</span>
-                Productos
-            </a>
-<a class="flex items-center gap-3 px-4 py-3 rounded-lg border-l-4 font-bold transition-colors duration-200 scale-95 active:scale-90 font-label-md text-label-md hover:bg-white/10 bg-white/20 border-white" href="/clientes">
-<span class="material-symbols-outlined">group</span>
-                Clientes
-            </a>
-<a class="flex items-center gap-3 px-4 py-3 rounded-lg transition-colors duration-200 scale-95 active:scale-90 font-label-md text-label-md text-on-primary hover:bg-white/10" href="#">
-<span class="material-symbols-outlined font-light">payments</span>
-                Finanzas
-            </a>
-<a class="flex items-center gap-3 px-4 py-3 rounded-lg transition-colors duration-200 scale-95 active:scale-90 font-label-md text-label-md mt-auto text-on-primary hover:bg-white/10" href="#">
-<span class="material-symbols-outlined font-light">settings</span>
-                Configuración
-            </a>
-<button class="flex w-full items-center gap-3 px-4 py-3 rounded-lg transition-colors duration-200 scale-95 active:scale-90 font-label-md text-label-md text-on-primary hover:bg-white/10" id="btn-logout-sidebar" type="button">
-<span class="material-symbols-outlined font-light">logout</span>
-                Cerrar sesión
-            </button>
-</nav>
-</aside>
+<%- include('../partials/sidebar') %>
 <!-- BottomNavBar (Mobile) -->
 <nav class="fixed bottom-6 right-6 w-auto h-12 rounded-full bg-primary text-on-primary flex items-center gap-2 px-6 shadow-[0_12px_24px_rgba(0,128,128,0.2)] md:hidden z-50">
 <span class="material-symbols-outlined">chat</span>
@@ -291,7 +233,7 @@
 <!-- Toast de notificaciones -->
 <div id="toast" class="hidden"></div>
 
-<script>
+<script nonce="<%= cspNonce %>">
         const token = localStorage.getItem('token');
         let clientes = [];
         let toastTimer;

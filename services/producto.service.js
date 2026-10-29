@@ -1,5 +1,6 @@
 const mongoose = require('mongoose');
 const Producto = require('../models/producto.model');
+const { consultarPaginado } = require('./paginacion.service');
 
 const CATEGORIAS = Producto.schema.path('categoria').enumValues;
 
@@ -114,7 +115,26 @@ const verificarCodigoDisponible = async (codigoProducto, idExcluido = null) => {
   }
 };
 
-const listarProductos = () => Producto.find().sort({ nombre: 1 });
+const escaparRegex = (texto) => String(texto).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+const listarProductos = ({ incluirInactivos = false, categoria, q, ...query } = {}) => {
+  const filtro = {};
+
+  if (!incluirInactivos) {
+    filtro.activo = { $ne: false };
+  }
+
+  if (categoria && CATEGORIAS.includes(categoria)) {
+    filtro.categoria = categoria;
+  }
+
+  if (q) {
+    const regex = new RegExp(escaparRegex(q), 'i');
+    filtro.$or = [{ nombre: regex }, { codigoProducto: regex }, { descripcion: regex }];
+  }
+
+  return consultarPaginado(Producto, filtro, { query, sort: { nombre: 1 } });
+};
 
 const obtenerProductoPorId = async (id) => {
   const producto = await Producto.findById(id);
@@ -184,13 +204,31 @@ const actualizarProducto = async (id, datos) => {
 };
 
 const eliminarProducto = async (id) => {
-  const productoEliminado = await Producto.findByIdAndDelete(id);
+  const producto = await Producto.findByIdAndUpdate(
+    id,
+    { activo: false },
+    { new: true, runValidators: true }
+  );
 
-  if (!productoEliminado) {
+  if (!producto) {
     throw new ErrorDeProducto(404, 'Producto no encontrado');
   }
 
-  return productoEliminado;
+  return producto;
+};
+
+const reactivarProducto = async (id) => {
+  const producto = await Producto.findByIdAndUpdate(
+    id,
+    { activo: true },
+    { new: true, runValidators: true }
+  );
+
+  if (!producto) {
+    throw new ErrorDeProducto(404, 'Producto no encontrado');
+  }
+
+  return producto;
 };
 
 module.exports = {
@@ -202,4 +240,5 @@ module.exports = {
   crearProducto,
   actualizarProducto,
   eliminarProducto,
+  reactivarProducto,
 };

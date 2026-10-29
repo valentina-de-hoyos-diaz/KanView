@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html class="light" lang="es">
+<head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>Kanview - <%= titulo %></title>
+<script nonce="<%= cspNonce %>" src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script nonce="<%= cspNonce %>">tailwind.config={theme:{extend:{colors:{primary:'#006565','primary-container':'#008080','on-primary':'#ffffff',background:'#fbf9f8','on-surface':'#1b1c1c','on-surface-variant':'#3e4949','surface-container-low':'#f5f3f3','surface-container-lowest':'#ffffff','outline-variant':'#bdc9c8',error:'#ba1a1a'},fontFamily:{sans:['Inter']}}}};</script>
+<style>body{background:#fbf9f8;font-family:'Inter',sans-serif}.card{background:#fff;box-shadow:8px 8px 16px rgba(0,0,0,.03),-8px -8px 16px #fff}.material-symbols-outlined{font-variation-settings:'FILL' 0,'wght' 300,'GRAD' 0,'opsz' 24}</style>
+</head>
+<body class="text-on-surface min-h-screen">
+<%- include('../partials/sidebar') %>
+
+<main class="md:ml-64 p-5 md:p-10 max-w-[1440px] mx-auto">
+  <div class="mb-6"><h2 class="text-3xl font-semibold">Auditoría</h2><p class="text-on-surface-variant mt-1">Registro de accesos y acciones relevantes del sistema.</p></div>
+  <form class="grid grid-cols-1 md:grid-cols-5 gap-3 mb-5" id="filtros">
+    <input class="px-4 py-2.5 rounded-xl border border-outline-variant bg-white text-sm" id="texto" placeholder="Texto o entidad">
+    <input class="px-4 py-2.5 rounded-xl border border-outline-variant bg-white text-sm" id="accion" placeholder="Acción (ej. pedido.crear)">
+    <input class="px-4 py-2.5 rounded-xl border border-outline-variant bg-white text-sm" id="desde" type="date">
+    <input class="px-4 py-2.5 rounded-xl border border-outline-variant bg-white text-sm" id="hasta" type="date">
+    <button class="px-4 py-2.5 rounded-xl bg-primary text-on-primary text-sm" type="submit">Buscar</button>
+  </form>
+  <div id="error" class="hidden mb-5 bg-red-50 border border-red-200 text-error text-sm px-4 py-3 rounded-xl"></div>
+  <div class="card rounded-2xl overflow-x-auto">
+    <table class="w-full text-left text-sm min-w-[850px]">
+      <thead class="text-xs uppercase tracking-wide text-on-surface-variant border-b border-outline-variant/40"><tr><th class="py-4 px-4">Fecha</th><th class="py-4 px-4">Usuario</th><th class="py-4 px-4">Acción</th><th class="py-4 px-4">Entidad</th><th class="py-4 px-4">Detalle</th><th class="py-4 px-4">IP</th></tr></thead>
+      <tbody id="tabla-auditoria" class="divide-y divide-outline-variant/20"><tr><td class="py-10 text-center text-on-surface-variant" colspan="6">Cargando auditoría...</td></tr></tbody>
+    </table>
+  </div>
+  <div class="flex items-center justify-between mt-4 text-sm text-on-surface-variant"><span id="resumen">—</span><div class="flex gap-2"><button class="px-4 py-2 rounded-xl border border-outline-variant bg-white" id="btn-anterior" type="button">Anterior</button><button class="px-4 py-2 rounded-xl border border-outline-variant bg-white" id="btn-siguiente" type="button">Siguiente</button></div></div>
+</main>
+
+<script nonce="<%= cspNonce %>">
+const token = localStorage.getItem('token');
+const rol = localStorage.getItem('rol') || '';
+let pagina = 1;
+let paginas = 0;
+
+const escapeHtml = (valor) => String(valor ?? '').replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('"', '&quot;').replaceAll("'", '&#39;');
+const mostrarError = (mensaje) => { const el = document.getElementById('error'); el.textContent = mensaje; el.classList.remove('hidden'); };
+const limpiarError = () => document.getElementById('error').classList.add('hidden');
+const fechaHora = (valor) => { const f = new Date(valor); return Number.isNaN(f.getTime()) ? '—' : f.toLocaleString('es-CO'); };
+
+const apiFetch = async (url) => {
+  const respuesta = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+  if (respuesta.status === 401) { localStorage.clear(); window.location.replace('/login'); throw new Error('Sesión expirada'); }
+  const cuerpo = await respuesta.json().catch(() => ({}));
+  if (!respuesta.ok) throw new Error(cuerpo.message || 'Error del servidor');
+  return cuerpo;
+};
+
+const cargar = async () => {
+  try {
+    limpiarError();
+    const params = new URLSearchParams({ pagina: String(pagina), limite: '25' });
+    const texto = document.getElementById('texto').value.trim();
+    const accion = document.getElementById('accion').value.trim();
+    const desde = document.getElementById('desde').value;
+    const hasta = document.getElementById('hasta').value;
+    if (texto) params.set('texto', texto);
+    if (accion) params.set('accion', accion);
+    if (desde) params.set('desde', desde);
+    if (hasta) params.set('hasta', hasta);
+
+    const respuesta = await apiFetch(`/api/auditoria?${params}`);
+    const { registros, total, paginas: totalPaginas } = respuesta.data;
+    paginas = totalPaginas;
+    document.getElementById('resumen').textContent = `${total} registros · página ${pagina} de ${Math.max(totalPaginas, 1)}`;
+    document.getElementById('btn-anterior').disabled = pagina <= 1;
+    document.getElementById('btn-siguiente').disabled = pagina >= totalPaginas;
+
+    const tbody = document.getElementById('tabla-auditoria');
+    if (!registros.length) { tbody.innerHTML = '<tr><td class="py-10 text-center text-on-surface-variant" colspan="6">Sin registros para los filtros elegidos.</td></tr>'; return; }
+    tbody.innerHTML = registros.map((r) => `<tr class="hover:bg-surface-container-low/60 align-top">
+      <td class="py-3 px-4 whitespace-nowrap">${fechaHora(r.createdAt)}</td>
+      <td class="py-3 px-4">${escapeHtml(r.usuario?.nombre || r.tipoUsuario)}<br><span class="text-xs text-on-surface-variant">${escapeHtml(r.usuario?.email || '')}</span></td>
+      <td class="py-3 px-4 font-mono text-xs">${escapeHtml(r.accion)}</td>
+      <td class="py-3 px-4">${escapeHtml(r.entidad || '—')}<br><span class="text-xs text-on-surface-variant">${escapeHtml(r.entidadId || '')}</span></td>
+      <td class="py-3 px-4 max-w-xs">${escapeHtml(r.detalle || '—')}</td>
+      <td class="py-3 px-4 text-xs text-on-surface-variant">${escapeHtml(r.ip || '—')}</td>
+    </tr>`).join('');
+  } catch (error) { mostrarError(error.message); }
+};
+
+document.getElementById('filtros').addEventListener('submit', (evento) => { evento.preventDefault(); pagina = 1; cargar(); });
+document.getElementById('btn-anterior').addEventListener('click', () => { if (pagina > 1) { pagina -= 1; cargar(); } });
+document.getElementById('btn-siguiente').addEventListener('click', () => { if (pagina < paginas) { pagina += 1; cargar(); } });
+document.getElementById('btn-logout-sidebar').addEventListener('click', async () => {
+  try { await fetch('/api/auth/logout', { method: 'POST', headers: { Authorization: `Bearer ${token}` } }); } catch (error) { console.warn(error.message); }
+  localStorage.clear(); window.location.replace('/login');
+});
+
+if (!token) window.location.replace('/login');
+else if (!['admin', 'secretaria'].includes(rol)) window.location.replace('/dashboard');
+else cargar();
+</script>
+</body>
+</html>

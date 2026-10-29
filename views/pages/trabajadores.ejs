@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html class="light" lang="es">
+<head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>Kanview - <%= titulo %></title>
+<script nonce="<%= cspNonce %>" src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script nonce="<%= cspNonce %>">tailwind.config={theme:{extend:{colors:{primary:'#006565','primary-container':'#008080','on-primary':'#ffffff',background:'#fbf9f8','on-surface':'#1b1c1c','on-surface-variant':'#3e4949','surface-container-low':'#f5f3f3','surface-container-lowest':'#ffffff','surface-container-high':'#eae8e7','outline-variant':'#bdc9c8',error:'#ba1a1a'},fontFamily:{sans:['Inter']}}}};</script>
+<style>body{background:#fbf9f8;font-family:'Inter',sans-serif}.card{background:#fff;box-shadow:8px 8px 16px rgba(0,0,0,.03),-8px -8px 16px #fff}.material-symbols-outlined{font-variation-settings:'FILL' 0,'wght' 300,'GRAD' 0,'opsz' 24}</style>
+</head>
+<body class="text-on-surface min-h-screen">
+<%- include('../partials/sidebar') %>
+
+<main class="md:ml-64 p-5 md:p-10 max-w-[1440px] mx-auto">
+  <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+    <div><h2 class="text-3xl font-semibold">Trabajadores</h2><p class="text-on-surface-variant mt-1">Personal del taller, cargos, salarios y tareas realizadas.</p></div>
+    <button class="bg-primary text-on-primary px-6 py-3 rounded-2xl text-sm font-medium flex items-center gap-2" id="btn-agregar" type="button"><span class="material-symbols-outlined">person_add</span>Agregar trabajador</button>
+  </div>
+  <div class="flex flex-col md:flex-row md:items-center justify-between gap-3 mb-4">
+    <div class="relative w-full md:w-80"><span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-[20px]">search</span><input class="w-full pl-10 pr-4 py-2.5 rounded-xl border border-outline-variant bg-white text-sm" id="buscador" placeholder="Buscar por nombre, documento o cargo"></div>
+    <label class="flex items-center gap-2 text-sm text-on-surface-variant"><input id="incluir-inactivos" type="checkbox"> Incluir inactivos</label>
+  </div>
+  <div id="error" class="hidden mb-5 bg-red-50 border border-red-200 text-error text-sm px-4 py-3 rounded-xl"></div>
+  <div class="card rounded-2xl overflow-x-auto">
+    <table class="w-full text-left text-sm min-w-[900px]">
+      <thead class="text-xs uppercase tracking-wide text-on-surface-variant border-b border-outline-variant/40">
+        <tr><th class="py-4 px-4">Trabajador</th><th class="py-4 px-4">Documento</th><th class="py-4 px-4">Cargo</th><th class="py-4 px-4">Salario</th><th class="py-4 px-4">Tareas</th><th class="py-4 px-4">Estado</th><th class="py-4 px-4 text-right">Acciones</th></tr>
+      </thead>
+      <tbody id="tabla-trabajadores" class="divide-y divide-outline-variant/20"><tr><td class="py-10 text-center text-on-surface-variant" colspan="7">Cargando trabajadores...</td></tr></tbody>
+    </table>
+  </div>
+</main>
+
+<div id="modal" class="fixed inset-0 z-[70] hidden items-center justify-center bg-black/30 p-4">
+  <div class="card rounded-2xl w-full max-w-2xl p-6 max-h-[92vh] overflow-y-auto">
+    <div class="flex items-center justify-between mb-5"><h3 class="text-2xl font-semibold" id="modal-titulo">Agregar trabajador</h3><button id="btn-cerrar" type="button" class="w-10 h-10 rounded-full hover:bg-surface-container-low"><span class="material-symbols-outlined">close</span></button></div>
+    <form id="form-trabajador" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <input id="trabajador-id" type="hidden">
+      <div class="md:col-span-2"><label class="text-sm">Nombre completo</label><input class="w-full mt-1 px-4 py-2.5 border border-outline-variant rounded-xl" id="nombre" required></div>
+      <div><label class="text-sm">Documento</label><input class="w-full mt-1 px-4 py-2.5 border border-outline-variant rounded-xl" id="documento" required></div>
+      <div><label class="text-sm">Celular</label><input class="w-full mt-1 px-4 py-2.5 border border-outline-variant rounded-xl" id="celular" required></div>
+      <div class="md:col-span-2"><label class="text-sm">Dirección</label><input class="w-full mt-1 px-4 py-2.5 border border-outline-variant rounded-xl" id="direccion" required></div>
+      <div><label class="text-sm">Fecha de nacimiento</label><input class="w-full mt-1 px-4 py-2.5 border border-outline-variant rounded-xl" id="fechaNacimiento" required type="date"></div>
+      <div><label class="text-sm">Edad</label><input class="w-full mt-1 px-4 py-2.5 border border-outline-variant rounded-xl" id="edad" min="0" required type="number"></div>
+      <div><label class="text-sm">Cargo</label><select class="w-full mt-1 px-4 py-2.5 border border-outline-variant rounded-xl" id="cargo" required><option value="">Selecciona un cargo</option><option>Tapicero</option><option>Costurero</option><option>Gerente</option><option>Secretaría</option><option>Otro</option></select></div>
+      <div><label class="text-sm">RH</label><input class="w-full mt-1 px-4 py-2.5 border border-outline-variant rounded-xl" id="RH" required placeholder="O+"></div>
+      <div><label class="text-sm">Salario</label><input class="w-full mt-1 px-4 py-2.5 border border-outline-variant rounded-xl" id="salario" min="0" required step="0.01" type="number"></div>
+      <div><label class="text-sm">Tareas realizadas</label><input class="w-full mt-1 px-4 py-2.5 border border-outline-variant rounded-xl" id="tareasRealizadas" min="0" required type="number" value="0"></div>
+      <div class="md:col-span-2"><label class="text-sm">Correo (opcional)</label><input class="w-full mt-1 px-4 py-2.5 border border-outline-variant rounded-xl" id="correo" type="email"></div>
+      <div class="md:col-span-2 flex items-center gap-2"><input id="activo" type="checkbox" checked><label class="text-sm" for="activo">Trabajador activo</label></div>
+      <div class="md:col-span-2 flex justify-end gap-3"><button class="px-5 py-2.5 rounded-xl border border-outline-variant" id="btn-cancelar" type="button">Cancelar</button><button class="px-5 py-2.5 rounded-xl bg-primary text-on-primary" type="submit">Guardar</button></div>
+    </form>
+  </div>
+</div>
+
+<script nonce="<%= cspNonce %>">
+const token = localStorage.getItem('token');
+const rol = localStorage.getItem('rol') || '';
+let trabajadores = [];
+let filtro = '';
+
+const escapeHtml = (valor) => String(valor ?? '').replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('"', '&quot;').replaceAll("'", '&#39;');
+const mostrarError = (mensaje) => { const el = document.getElementById('error'); el.textContent = mensaje; el.classList.remove('hidden'); };
+const limpiarError = () => document.getElementById('error').classList.add('hidden');
+const moneda = (valor) => { const n = Number(valor && valor.$numberDecimal ? valor.$numberDecimal : valor); return Number.isFinite(n) ? n.toLocaleString('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '—'; };
+const fecha = (valor) => { const f = new Date(valor); return Number.isNaN(f.getTime()) ? '—' : f.toLocaleDateString('es-CO', { timeZone: 'UTC' }); };
+const calcularEdad = (fechaNacimiento) => { const nacimiento = new Date(fechaNacimiento); if (Number.isNaN(nacimiento.getTime())) return ''; const hoy = new Date(); let edad = hoy.getFullYear() - nacimiento.getFullYear(); const mes = hoy.getMonth() - nacimiento.getMonth(); if (mes < 0 || (mes === 0 && hoy.getDate() < nacimiento.getDate())) edad -= 1; return Math.max(edad, 0); };
+
+const apiFetch = async (url, opciones = {}) => {
+  const respuesta = await fetch(url, { ...opciones, headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}`, ...(opciones.headers || {}) } });
+  if (respuesta.status === 401) { localStorage.clear(); window.location.replace('/login'); throw new Error('Sesión expirada'); }
+  const cuerpo = await respuesta.json().catch(() => ({}));
+  if (!respuesta.ok) throw new Error(cuerpo.message || 'Error del servidor');
+  return cuerpo;
+};
+
+const renderizar = () => {
+  const tbody = document.getElementById('tabla-trabajadores');
+  const texto = filtro.toLowerCase();
+  const visibles = trabajadores.filter((trabajador) => !texto || `${trabajador.nombre} ${trabajador.documento} ${trabajador.cargo}`.toLowerCase().includes(texto));
+  if (!visibles.length) { tbody.innerHTML = '<tr><td class="py-10 text-center text-on-surface-variant" colspan="7">No hay trabajadores que coincidan.</td></tr>'; return; }
+  tbody.innerHTML = visibles.map((trabajador) => `<tr class="hover:bg-surface-container-low/60">
+    <td class="py-4 px-4"><p class="font-medium">${escapeHtml(trabajador.nombre)}</p><p class="text-xs text-on-surface-variant">${escapeHtml(trabajador.celular)}</p></td>
+    <td class="py-4 px-4">${escapeHtml(trabajador.documento)}</td>
+    <td class="py-4 px-4">${escapeHtml(trabajador.cargo)}</td>
+    <td class="py-4 px-4">${moneda(trabajador.salario)}</td>
+    <td class="py-4 px-4">${escapeHtml(trabajador.tareasRealizadas || 0)}</td>
+    <td class="py-4 px-4"><span class="px-2 py-1 rounded-full text-xs font-semibold ${trabajador.activo === false ? 'bg-red-50 text-error' : 'bg-emerald-50 text-emerald-700'}">${trabajador.activo === false ? 'Inactivo' : 'Activo'}</span></td>
+    <td class="py-4 px-4 text-right whitespace-nowrap">
+      <button class="p-2 text-on-surface-variant hover:text-primary" data-accion="editar" data-id="${trabajador._id}" title="Editar"><span class="material-symbols-outlined text-[20px]">edit</span></button>
+      ${trabajador.activo === false
+        ? `<button class="p-2 text-on-surface-variant hover:text-emerald-700" data-accion="reactivar" data-id="${trabajador._id}" title="Reactivar"><span class="material-symbols-outlined text-[20px]">restart_alt</span></button>`
+        : `<button class="p-2 text-on-surface-variant hover:text-error" data-accion="desactivar" data-id="${trabajador._id}" title="Desactivar"><span class="material-symbols-outlined text-[20px]">person_off</span></button>`}
+    </td>
+  </tr>`).join('');
+};
+
+const cargar = async () => {
+  try {
+    limpiarError();
+    const incluir = document.getElementById('incluir-inactivos').checked ? '?incluirInactivos=true' : '';
+    const respuesta = await apiFetch(`/api/trabajadores${incluir}`);
+    trabajadores = respuesta.data || [];
+    renderizar();
+  } catch (error) { mostrarError(error.message); }
+};
+
+const modal = document.getElementById('modal');
+const form = document.getElementById('form-trabajador');
+
+const abrirModal = (trabajador = null) => {
+  form.reset();
+  document.getElementById('trabajador-id').value = trabajador ? trabajador._id : '';
+  document.getElementById('modal-titulo').textContent = trabajador ? 'Editar trabajador' : 'Agregar trabajador';
+  document.getElementById('activo').checked = trabajador ? trabajador.activo !== false : true;
+  document.getElementById('tareasRealizadas').value = trabajador ? trabajador.tareasRealizadas || 0 : 0;
+
+  if (trabajador) {
+    document.getElementById('nombre').value = trabajador.nombre || '';
+    document.getElementById('documento').value = trabajador.documento || '';
+    document.getElementById('celular').value = trabajador.celular || '';
+    document.getElementById('direccion').value = trabajador.direccion || '';
+    document.getElementById('fechaNacimiento').value = String(trabajador.fechaNacimiento || '').slice(0, 10);
+    document.getElementById('edad').value = trabajador.edad || '';
+    const selectCargo = document.getElementById('cargo');
+    [...selectCargo.options].filter((opcion) => opcion.dataset.custom === 'true').forEach((opcion) => opcion.remove());
+    if (trabajador.cargo && ![...selectCargo.options].some((opcion) => opcion.value === trabajador.cargo)) {
+      const opcion = document.createElement('option');
+      opcion.value = trabajador.cargo;
+      opcion.textContent = trabajador.cargo;
+      opcion.dataset.custom = 'true';
+      selectCargo.appendChild(opcion);
+    }
+    selectCargo.value = trabajador.cargo || '';
+    document.getElementById('RH').value = trabajador.RH || '';
+    document.getElementById('salario').value = trabajador.salario && trabajador.salario.$numberDecimal ? trabajador.salario.$numberDecimal : (trabajador.salario || '');
+    document.getElementById('correo').value = trabajador.correo || '';
+  }
+
+  modal.classList.remove('hidden'); modal.classList.add('flex');
+};
+const cerrarModal = () => { modal.classList.add('hidden'); modal.classList.remove('flex'); };
+
+document.getElementById('fechaNacimiento').addEventListener('change', (evento) => { document.getElementById('edad').value = calcularEdad(evento.target.value); });
+
+form.addEventListener('submit', async (evento) => {
+  evento.preventDefault();
+  const id = document.getElementById('trabajador-id').value;
+  const datos = {
+    nombre: document.getElementById('nombre').value.trim(),
+    documento: document.getElementById('documento').value.trim(),
+    celular: document.getElementById('celular').value.trim(),
+    direccion: document.getElementById('direccion').value.trim(),
+    fechaNacimiento: document.getElementById('fechaNacimiento').value,
+    edad: Number(document.getElementById('edad').value),
+    cargo: document.getElementById('cargo').value,
+    RH: document.getElementById('RH').value.trim(),
+    salario: Number(document.getElementById('salario').value),
+    tareasRealizadas: Number(document.getElementById('tareasRealizadas').value),
+    correo: document.getElementById('correo').value.trim(),
+    activo: document.getElementById('activo').checked,
+  };
+  try {
+    if (id) await apiFetch(`/api/trabajadores/${id}`, { method: 'PUT', body: JSON.stringify(datos) });
+    else await apiFetch('/api/trabajadores', { method: 'POST', body: JSON.stringify(datos) });
+    cerrarModal(); await cargar();
+  } catch (error) { mostrarError(error.message); }
+});
+
+document.getElementById('tabla-trabajadores').addEventListener('click', async (evento) => {
+  const boton = evento.target.closest('button[data-accion]');
+  if (!boton) return;
+  const trabajador = trabajadores.find((item) => item._id === boton.dataset.id);
+  if (!trabajador) return;
+  if (boton.dataset.accion === 'editar') return abrirModal(trabajador);
+  if (boton.dataset.accion === 'reactivar') {
+    try { await apiFetch(`/api/trabajadores/${trabajador._id}/reactivar`, { method: 'PATCH' }); await cargar(); } catch (error) { mostrarError(error.message); }
+    return;
+  }
+  if (!window.confirm(`¿Desactivar a ${trabajador.nombre}?`)) return;
+  try { await apiFetch(`/api/trabajadores/${trabajador._id}`, { method: 'DELETE' }); await cargar(); } catch (error) { mostrarError(error.message); }
+});
+
+document.getElementById('buscador').addEventListener('input', (evento) => { filtro = evento.target.value.trim(); renderizar(); });
+document.getElementById('incluir-inactivos').addEventListener('change', cargar);
+document.getElementById('btn-agregar').addEventListener('click', () => abrirModal());
+document.getElementById('btn-cerrar').addEventListener('click', cerrarModal);
+document.getElementById('btn-cancelar').addEventListener('click', cerrarModal);
+modal.addEventListener('click', (evento) => { if (evento.target === modal) cerrarModal(); });
+document.getElementById('btn-logout-sidebar').addEventListener('click', async () => {
+  try { await apiFetch('/api/auth/logout', { method: 'POST' }); } catch (error) { console.warn(error.message); }
+  localStorage.clear(); window.location.replace('/login');
+});
+
+if (!token) window.location.replace('/login');
+else if (!['admin', 'secretaria'].includes(rol)) window.location.replace('/dashboard');
+else cargar();
+</script>
+</body>
+</html>

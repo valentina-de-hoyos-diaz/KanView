@@ -109,11 +109,62 @@ const authenticateUser = (req, res, next) => {
   return noAutorizado(res, 'Se requiere autenticación de usuario');
 };
 
+const esSesionCliente = (req) =>
+  Boolean(req.sesion && req.sesion.tipoUsuario === 'Cliente');
+
+const rolActual = (req) => (req.usuario && req.usuario.rol) || null;
+
+const requireRoles = (...rolesPermitidos) => (req, res, next) => {
+  if (!req.sesion) {
+    return noAutorizado(res, 'Se requiere autenticación');
+  }
+
+  if (esSesionCliente(req)) {
+    return res.status(403).json({
+      status: 403,
+      message: 'Acceso restringido al personal del taller',
+      data: null,
+    });
+  }
+
+  const rol = rolActual(req);
+
+  if (!rolesPermitidos.includes(rol)) {
+    return res.status(403).json({
+      status: 403,
+      message: 'No tienes permisos para realizar esta acción',
+      data: null,
+    });
+  }
+
+  return next();
+};
+
 const requireUsuario = (req, res, next) => {
-  if (req.sesion && req.sesion.tipoUsuario === 'Cliente') {
+  if (esSesionCliente(req)) {
     return res.status(403).json({
       status: 403,
       message: 'Acceso restringido a administradores',
+      data: null,
+    });
+  }
+
+  return next();
+};
+
+const requireAdmin = requireRoles('admin');
+
+const requireAdminOrSecretaria = requireRoles('admin', 'secretaria');
+
+const requireStaff = (req, res, next) => {
+  if (!req.sesion) {
+    return noAutorizado(res, 'Se requiere autenticación');
+  }
+
+  if (esSesionCliente(req)) {
+    return res.status(403).json({
+      status: 403,
+      message: 'Acceso restringido al personal del taller',
       data: null,
     });
   }
@@ -126,6 +177,12 @@ module.exports = {
   requireApiKey,
   requireSessionId,
   requireUsuario,
+  requireAdmin,
+  requireAdminOrSecretaria,
+  requireRoles,
+  requireStaff,
+  esSesionCliente,
+  rolActual,
   authenticate,
   authenticateUser,
 };

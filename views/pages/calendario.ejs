@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html class="light" lang="es">
+<head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>Kanview - <%= titulo %></title>
+<script nonce="<%= cspNonce %>" src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script nonce="<%= cspNonce %>">tailwind.config={theme:{extend:{colors:{primary:'#006565','primary-container':'#008080','on-primary':'#ffffff',background:'#fbf9f8','on-surface':'#1b1c1c','on-surface-variant':'#3e4949','surface-container-low':'#f5f3f3','surface-container-lowest':'#ffffff','outline-variant':'#bdc9c8',error:'#ba1a1a'},fontFamily:{sans:['Inter']}}}};</script>
+<style>body{background:#fbf9f8;font-family:'Inter',sans-serif}.card{background:#fff;box-shadow:8px 8px 16px rgba(0,0,0,.03),-8px -8px 16px #fff}.material-symbols-outlined{font-variation-settings:'FILL' 0,'wght' 300,'GRAD' 0,'opsz' 24}</style>
+</head>
+<body class="text-on-surface min-h-screen">
+<%- include('../partials/sidebar') %>
+
+<main class="md:ml-64 p-5 md:p-10 max-w-[1440px] mx-auto">
+  <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+    <div><h2 class="text-3xl font-semibold">Calendario de producción</h2><p class="text-on-surface-variant mt-1">Entregas de pedidos, eventos internos y recordatorios.</p></div>
+    <button class="bg-primary text-on-primary px-6 py-3 rounded-2xl text-sm font-medium flex items-center gap-2" id="btn-agregar" type="button"><span class="material-symbols-outlined">event</span>Nuevo evento</button>
+  </div>
+  <div class="flex items-center justify-between mb-4">
+    <button class="px-4 py-2 rounded-xl border border-outline-variant bg-white text-sm" id="btn-anterior" type="button">← Mes anterior</button>
+    <h3 class="text-xl font-semibold" id="titulo-mes">—</h3>
+    <button class="px-4 py-2 rounded-xl border border-outline-variant bg-white text-sm" id="btn-siguiente" type="button">Mes siguiente →</button>
+  </div>
+  <div id="error" class="hidden mb-5 bg-red-50 border border-red-200 text-error text-sm px-4 py-3 rounded-xl"></div>
+  <div class="card rounded-2xl overflow-hidden">
+    <div class="grid grid-cols-7 bg-surface-container-low text-xs font-semibold uppercase tracking-wide text-on-surface-variant" id="dias-semana"></div>
+    <div class="grid grid-cols-7 auto-rows-[120px]" id="grid-calendario"></div>
+  </div>
+</main>
+
+<div id="modal" class="fixed inset-0 z-[70] hidden items-center justify-center bg-black/30 p-4">
+  <div class="card rounded-2xl w-full max-w-lg p-6 max-h-[90vh] overflow-y-auto">
+    <div class="flex items-center justify-between mb-5"><h3 class="text-2xl font-semibold" id="modal-titulo">Nuevo evento</h3><button id="btn-cerrar" type="button" class="w-10 h-10 rounded-full hover:bg-surface-container-low"><span class="material-symbols-outlined">close</span></button></div>
+    <form id="form-evento" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <input id="evento-id" type="hidden">
+      <div class="md:col-span-2"><label class="text-sm">Título</label><input class="w-full mt-1 px-4 py-2.5 border border-outline-variant rounded-xl" id="titulo" required></div>
+      <div class="md:col-span-2"><label class="text-sm">Descripción</label><textarea class="w-full mt-1 px-4 py-2.5 border border-outline-variant rounded-xl" id="descripcion" rows="2"></textarea></div>
+      <div><label class="text-sm">Inicio</label><input class="w-full mt-1 px-4 py-2.5 border border-outline-variant rounded-xl" id="inicio" required type="datetime-local"></div>
+      <div><label class="text-sm">Fin</label><input class="w-full mt-1 px-4 py-2.5 border border-outline-variant rounded-xl" id="fin" required type="datetime-local"></div>
+      <div><label class="text-sm">Recordatorio (minutos antes)</label><input class="w-full mt-1 px-4 py-2.5 border border-outline-variant rounded-xl" id="recordatorio" min="0" max="10080" type="number" value="0"></div>
+      <div><label class="text-sm">Pedido (opcional)</label><select class="w-full mt-1 px-4 py-2.5 border border-outline-variant rounded-xl" id="pedido"><option value="">Sin pedido</option></select></div>
+      <div class="md:col-span-2 flex justify-end gap-3"><button class="px-5 py-2.5 rounded-xl border border-outline-variant" id="btn-cancelar" type="button">Cancelar</button><button class="px-5 py-2.5 rounded-xl bg-primary text-on-primary" type="submit">Guardar</button></div>
+    </form>
+  </div>
+</div>
+
+<script nonce="<%= cspNonce %>">
+const token = localStorage.getItem('token');
+const rol = localStorage.getItem('rol') || '';
+let mesActual = new Date();
+let eventos = [];
+let pedidos = [];
+let pedidosTodos = [];
+
+const escapeHtml = (valor) => String(valor ?? '').replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('"', '&quot;').replaceAll("'", '&#39;');
+const mostrarError = (mensaje) => { const el = document.getElementById('error'); el.textContent = mensaje; el.classList.remove('hidden'); };
+const limpiarError = () => document.getElementById('error').classList.add('hidden');
+const ymd = (fecha) => fecha.toISOString().slice(0, 10);
+const hora = (fecha) => new Date(fecha).toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' });
+
+const apiFetch = async (url, opciones = {}) => {
+  const respuesta = await fetch(url, { ...opciones, headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}`, ...(opciones.headers || {}) } });
+  if (respuesta.status === 401) { localStorage.clear(); window.location.replace('/login'); throw new Error('Sesión expirada'); }
+  const cuerpo = await respuesta.json().catch(() => ({}));
+  if (!respuesta.ok) throw new Error(cuerpo.message || 'Error del servidor');
+  return cuerpo;
+};
+
+const rangoMes = () => {
+  const inicio = new Date(Date.UTC(mesActual.getUTCFullYear(), mesActual.getUTCMonth(), 1));
+  const fin = new Date(Date.UTC(mesActual.getUTCFullYear(), mesActual.getUTCMonth() + 1, 0, 23, 59, 59));
+  return { inicio, fin };
+};
+
+const cargar = async () => {
+  try {
+    limpiarError();
+    const { inicio, fin } = rangoMes();
+    const params = new URLSearchParams({ desde: inicio.toISOString(), hasta: fin.toISOString() });
+    const [respuestaEventos, respuestaPedidos, respuestaTodos] = await Promise.all([
+      apiFetch(`/api/calendario?${params}`),
+      apiFetch(`/api/calendario/pedidos?${params}`),
+      apiFetch('/api/pedidos'),
+    ]);
+    eventos = respuestaEventos.data || [];
+    pedidos = respuestaPedidos.data || [];
+    pedidosTodos = respuestaTodos.data || [];
+    document.getElementById('pedido').innerHTML = '<option value="">Sin pedido</option>' + pedidosTodos.map((p) => `<option value="${p._id}">${escapeHtml(p.codigoPedido)} · ${escapeHtml(p.cliente?.nombre || '')}</option>`).join('');
+    renderizar();
+  } catch (error) { mostrarError(error.message); }
+};
+
+const renderizar = () => {
+  const { inicio } = rangoMes();
+  const anio = inicio.getUTCFullYear();
+  const mes = inicio.getUTCMonth();
+  document.getElementById('titulo-mes').textContent = new Date(Date.UTC(anio, mes, 1)).toLocaleDateString('es-CO', { month: 'long', year: 'numeric', timeZone: 'UTC' });
+  document.getElementById('dias-semana').innerHTML = ['Lun','Mar','Mié','Jue','Vie','Sáb','Dom'].map((d) => `<div class="px-3 py-2">${d}</div>`).join('');
+
+  const primerDia = new Date(Date.UTC(anio, mes, 1));
+  const offset = (primerDia.getUTCDay() + 6) % 7;
+  const diasMes = new Date(Date.UTC(anio, mes + 1, 0)).getUTCDate();
+  const celdas = [];
+
+  for (let i = 0; i < offset; i += 1) celdas.push('<div class="border border-outline-variant/20 bg-surface-container-low/30"></div>');
+
+  for (let dia = 1; dia <= diasMes; dia += 1) {
+    const fechaDia = `${anio}-${String(mes + 1).padStart(2, '0')}-${String(dia).padStart(2, '0')}`;
+    const eventosDia = eventos.filter((evento) => ymd(new Date(evento.inicio)) === fechaDia);
+    const pedidosDia = pedidos.filter((pedido) => pedido.fechaEntrega && ymd(new Date(pedido.fechaEntrega)) === fechaDia);
+    const contenido = [
+      ...pedidosDia.map((pedido) => `<div class="text-[10px] rounded bg-primary/10 text-primary px-1.5 py-0.5 truncate" title="Entrega ${escapeHtml(pedido.codigoPedido)}">📦 ${escapeHtml(pedido.codigoPedido)}</div>`),
+      ...eventosDia.map((evento) => `<button class="w-full text-left text-[10px] rounded bg-amber-50 text-amber-800 px-1.5 py-0.5 truncate" data-evento="${evento._id}" title="${escapeHtml(evento.titulo)}">${hora(evento.inicio)} ${escapeHtml(evento.titulo)}</button>`),
+    ].join('');
+    celdas.push(`<div class="border border-outline-variant/20 p-1.5 overflow-hidden ${fechaDia === new Date().toISOString().slice(0, 10) ? 'bg-primary/5' : ''}"><div class="text-xs font-semibold mb-1">${dia}</div><div class="space-y-1">${contenido}</div></div>`);
+  }
+
+  document.getElementById('grid-calendario').innerHTML = celdas.join('');
+};
+
+const modal = document.getElementById('modal');
+const form = document.getElementById('form-evento');
+
+const abrirModal = (evento = null) => {
+  form.reset();
+  document.getElementById('evento-id').value = evento ? evento._id : '';
+  document.getElementById('modal-titulo').textContent = evento ? 'Editar evento' : 'Nuevo evento';
+  if (evento) {
+    document.getElementById('titulo').value = evento.titulo || '';
+    document.getElementById('descripcion').value = evento.descripcion || '';
+    document.getElementById('inicio').value = new Date(evento.inicio).toISOString().slice(0, 16);
+    document.getElementById('fin').value = new Date(evento.fin).toISOString().slice(0, 16);
+    document.getElementById('recordatorio').value = evento.recordatorioMinutos || 0;
+    document.getElementById('pedido').value = evento.pedido ? (evento.pedido._id || evento.pedido) : '';
+  } else {
+    const ahora = new Date();
+    ahora.setMinutes(0, 0, 0);
+    const fin = new Date(ahora.getTime() + 60 * 60 * 1000);
+    document.getElementById('inicio').value = ahora.toISOString().slice(0, 16);
+    document.getElementById('fin').value = fin.toISOString().slice(0, 16);
+  }
+  modal.classList.remove('hidden'); modal.classList.add('flex');
+};
+const cerrarModal = () => { modal.classList.add('hidden'); modal.classList.remove('flex'); };
+
+form.addEventListener('submit', async (evento) => {
+  evento.preventDefault();
+  const id = document.getElementById('evento-id').value;
+  const datos = {
+    titulo: document.getElementById('titulo').value.trim(),
+    descripcion: document.getElementById('descripcion').value.trim(),
+    inicio: new Date(document.getElementById('inicio').value).toISOString(),
+    fin: new Date(document.getElementById('fin').value).toISOString(),
+    recordatorioMinutos: Number(document.getElementById('recordatorio').value) || 0,
+    pedido: document.getElementById('pedido').value || null,
+  };
+  try {
+    if (id) await apiFetch(`/api/calendario/${id}`, { method: 'PUT', body: JSON.stringify(datos) });
+    else await apiFetch('/api/calendario', { method: 'POST', body: JSON.stringify(datos) });
+    cerrarModal(); await cargar();
+  } catch (error) { mostrarError(error.message); }
+});
+
+document.getElementById('grid-calendario').addEventListener('click', (evento) => {
+  const boton = evento.target.closest('button[data-evento]');
+  if (!boton) return;
+  const dato = eventos.find((item) => item._id === boton.dataset.evento);
+  if (!dato) return;
+  const accion = window.confirm(`Evento: ${dato.titulo}\n\n¿Deseas eliminarlo?`);
+  if (accion) {
+    apiFetch(`/api/calendario/${dato._id}`, { method: 'DELETE' }).then(cargar).catch((error) => mostrarError(error.message));
+  } else {
+    abrirModal(dato);
+  }
+});
+
+document.getElementById('btn-agregar').addEventListener('click', () => abrirModal());
+document.getElementById('btn-cerrar').addEventListener('click', cerrarModal);
+document.getElementById('btn-cancelar').addEventListener('click', cerrarModal);
+document.getElementById('btn-anterior').addEventListener('click', () => { mesActual = new Date(Date.UTC(mesActual.getUTCFullYear(), mesActual.getUTCMonth() - 1, 1)); cargar(); });
+document.getElementById('btn-siguiente').addEventListener('click', () => { mesActual = new Date(Date.UTC(mesActual.getUTCFullYear(), mesActual.getUTCMonth() + 1, 1)); cargar(); });
+modal.addEventListener('click', (evento) => { if (evento.target === modal) cerrarModal(); });
+document.getElementById('btn-logout-sidebar').addEventListener('click', async () => {
+  try { await apiFetch('/api/auth/logout', { method: 'POST' }); } catch (error) { console.warn(error.message); }
+  localStorage.clear(); window.location.replace('/login');
+});
+
+if (!token) window.location.replace('/login');
+else if (rol === 'cliente') window.location.replace('/portal');
+else cargar();
+</script>
+</body>
+</html>

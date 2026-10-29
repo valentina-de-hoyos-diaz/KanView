@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html class="light" lang="es">
+<head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>Kanview - <%= titulo %></title>
+<script nonce="<%= cspNonce %>" src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script nonce="<%= cspNonce %>">
+tailwind.config = {
+  theme: {
+    extend: {
+      colors: {
+        primary: '#006565',
+        'primary-container': '#008080',
+        'on-primary': '#ffffff',
+        'on-primary-container': '#e3fffe',
+        background: '#fbf9f8',
+        'on-surface': '#1b1c1c',
+        'on-surface-variant': '#3e4949',
+        'surface-container-low': '#f5f3f3',
+        'surface-container-lowest': '#ffffff',
+        'surface-container-high': '#eae8e7',
+        'outline-variant': '#bdc9c8',
+        error: '#ba1a1a',
+      },
+      fontFamily: { sans: ['Inter'] },
+    },
+  },
+};
+</script>
+<style>
+body { background-color: #fbf9f8; font-family: 'Inter', sans-serif; }
+.neomorphic-card { background: #fff; box-shadow: 8px 8px 16px rgba(0,0,0,.03), -8px -8px 16px #fff; }
+.material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 24; }
+</style>
+</head>
+<body class="text-on-surface antialiased min-h-screen">
+<%- include('../partials/sidebar') %>
+
+<main class="md:ml-64 p-5 md:p-10 max-w-[1440px] mx-auto min-h-screen">
+  <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+    <div>
+      <h2 class="text-3xl font-semibold">Panel de control</h2>
+      <p class="text-on-surface-variant mt-1">Resumen real de la operación del taller.</p>
+    </div>
+    <a class="bg-primary text-on-primary hover:brightness-110 px-6 py-3 rounded-2xl text-sm font-medium flex items-center justify-center gap-2 transition-transform active:scale-95" href="/pedidos">
+      <span class="material-symbols-outlined">add</span>Nuevo pedido
+    </a>
+  </div>
+
+  <div id="panel-error" class="hidden mb-6 bg-red-50 border border-red-200 text-error text-sm px-4 py-3 rounded-xl"></div>
+
+  <section class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-5 mb-8">
+    <article class="neomorphic-card rounded-2xl p-5">
+      <div class="flex items-center justify-between text-on-surface-variant"><span class="text-sm">Clientes</span><span class="material-symbols-outlined text-primary">group</span></div>
+      <p class="text-3xl font-bold mt-3" id="total-clientes">—</p>
+    </article>
+    <article class="neomorphic-card rounded-2xl p-5">
+      <div class="flex items-center justify-between text-on-surface-variant"><span class="text-sm">Trabajadores</span><span class="material-symbols-outlined text-primary">engineering</span></div>
+      <p class="text-3xl font-bold mt-3" id="total-trabajadores">—</p>
+    </article>
+    <article class="neomorphic-card rounded-2xl p-5">
+      <div class="flex items-center justify-between text-on-surface-variant"><span class="text-sm">Pedidos activos</span><span class="material-symbols-outlined text-primary">shopping_cart</span></div>
+      <p class="text-3xl font-bold mt-3" id="total-pedidos">—</p>
+    </article>
+    <article class="neomorphic-card rounded-2xl p-5">
+      <div class="flex items-center justify-between text-on-surface-variant"><span class="text-sm">Por aprobar</span><span class="material-symbols-outlined text-primary">pending_actions</span></div>
+      <p class="text-3xl font-bold mt-3" id="pedidos-pendientes">—</p>
+    </article>
+  </section>
+
+  <section class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <div class="lg:col-span-2 neomorphic-card rounded-2xl p-6">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="text-xl font-semibold">Últimos pedidos</h3>
+        <a class="text-sm text-primary font-medium hover:underline" href="/pedidos">Ver todos</a>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="w-full text-left text-sm min-w-[640px]">
+          <thead class="text-xs uppercase tracking-wide text-on-surface-variant border-b border-outline-variant/40">
+            <tr><th class="py-3 px-2">Código</th><th class="py-3 px-2">Cliente</th><th class="py-3 px-2">Producto</th><th class="py-3 px-2">Estado</th><th class="py-3 px-2">Aprobación</th></tr>
+          </thead>
+          <tbody id="tabla-ultimos-pedidos" class="divide-y divide-outline-variant/20">
+            <tr><td class="py-8 text-center text-on-surface-variant" colspan="5">Cargando pedidos...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="neomorphic-card rounded-2xl p-6">
+      <h3 class="text-xl font-semibold mb-4">Inventario</h3>
+      <div class="space-y-3 text-sm">
+        <div class="flex items-center justify-between p-3 rounded-xl bg-surface-container-low">
+          <span>Productos registrados</span><span class="font-bold" id="total-productos">—</span>
+        </div>
+        <div class="flex items-center justify-between p-3 rounded-xl bg-red-50 text-error">
+          <span>Agotados</span><span class="font-bold" id="productos-agotados">—</span>
+        </div>
+        <div class="flex items-center justify-between p-3 rounded-xl bg-amber-50 text-amber-700">
+          <span>Stock bajo</span><span class="font-bold" id="productos-stock-bajo">—</span>
+        </div>
+        <a class="block text-center mt-4 border border-outline-variant rounded-xl py-2.5 text-primary font-medium hover:bg-surface-container-low" href="/productos">Gestionar inventario</a>
+      </div>
+    </div>
+  </section>
+</main>
+
+<script nonce="<%= cspNonce %>">
+const token = localStorage.getItem('token');
+const tipo = localStorage.getItem('tipo');
+const errorPanel = document.getElementById('panel-error');
+
+const escapeHtml = (valor) => String(valor ?? '')
+  .replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;')
+  .replaceAll('"', '&quot;').replaceAll("'", '&#39;');
+
+const mostrarError = (mensaje) => {
+  errorPanel.textContent = mensaje;
+  errorPanel.classList.remove('hidden');
+};
+
+const formatoFecha = (fecha) => {
+  const valor = new Date(fecha);
+  return Number.isNaN(valor.getTime()) ? '—' : valor.toLocaleDateString('es-CO', { timeZone: 'UTC' });
+};
+
+const insignia = (texto, clases) => `<span class="inline-flex px-2 py-1 rounded-full text-xs font-semibold ${clases}">${escapeHtml(texto)}</span>`;
+
+const cargarPanel = async () => {
+  try {
+    const respuesta = await fetch('/api/panel', { headers: { Authorization: `Bearer ${token}` } });
+
+    if (respuesta.status === 401) {
+      localStorage.clear();
+      window.location.replace('/login');
+      return;
+    }
+
+    const cuerpo = await respuesta.json().catch(() => ({}));
+    if (!respuesta.ok) throw new Error(cuerpo.message || 'No se pudo cargar el panel');
+
+    const { totales, ultimosPedidos } = cuerpo.data;
+    document.getElementById('total-clientes').textContent = totales.clientes;
+    document.getElementById('total-trabajadores').textContent = totales.trabajadores;
+    document.getElementById('total-pedidos').textContent = totales.pedidos;
+    document.getElementById('pedidos-pendientes').textContent = totales.pedidosPendientesAprobacion;
+    document.getElementById('total-productos').textContent = totales.productos;
+    document.getElementById('productos-agotados').textContent = totales.productosAgotados;
+    document.getElementById('productos-stock-bajo').textContent = totales.productosStockBajo;
+
+    const cuerpoTabla = document.getElementById('tabla-ultimos-pedidos');
+    if (!ultimosPedidos.length) {
+      cuerpoTabla.innerHTML = '<tr><td class="py-8 text-center text-on-surface-variant" colspan="5">Todavía no hay pedidos registrados.</td></tr>';
+      return;
+    }
+
+    cuerpoTabla.innerHTML = ultimosPedidos.map((pedido) => {
+      const aprobacionClases = pedido.estadoAprobacion === 'Aprobado'
+        ? 'bg-emerald-50 text-emerald-700'
+        : pedido.estadoAprobacion === 'Rechazado'
+          ? 'bg-red-50 text-error'
+          : 'bg-amber-50 text-amber-700';
+      return `<tr class="hover:bg-surface-container-low/60">
+        <td class="py-3 px-2 font-semibold text-primary">${escapeHtml(pedido.codigoPedido)}</td>
+        <td class="py-3 px-2">${escapeHtml(pedido.cliente?.nombre || '—')}</td>
+        <td class="py-3 px-2">${escapeHtml(pedido.producto?.nombre || '—')} <span class="text-on-surface-variant">x${escapeHtml(pedido.producto?.cantidad || 0)}</span></td>
+        <td class="py-3 px-2">${escapeHtml(pedido.estadoPedido)}</td>
+        <td class="py-3 px-2">${insignia(pedido.estadoAprobacion || 'Aprobado', aprobacionClases)}</td>
+      </tr>`;
+    }).join('');
+  } catch (error) {
+    mostrarError(error.message);
+  }
+};
+
+document.getElementById('btn-logout-sidebar').addEventListener('click', async () => {
+  try {
+    await fetch('/api/auth/logout', { method: 'POST', headers: { Authorization: `Bearer ${token}` } });
+  } catch (error) {
+    console.warn('No se pudo cerrar la sesión en el servidor:', error.message);
+  }
+  localStorage.clear();
+  window.location.replace('/login');
+});
+
+if (!token) {
+  window.location.replace('/login');
+} else if (tipo === 'Cliente') {
+  window.location.replace('/portal');
+} else {
+  cargarPanel();
+}
+</script>
+</body>
+</html>

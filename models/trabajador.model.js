@@ -13,8 +13,20 @@ const trabajadorSchema = new Schema(
     RH: { type: String, required: true },
     salario: { type: Schema.Types.Decimal128, required: true },
     tareasRealizadas: { type: Number, required: true },
+    correo: {
+      type: String,
+      default: '',
+      lowercase: true,
+      trim: true,
+      match: [/^$|^[^\s@]+@[^\s@]+\.[^\s@]+$/, 'El correo no es válido'],
+    },
+    activo: { type: Boolean, default: true },
   },
   { collection: 'trabajador' }
 );
+
+trabajadorSchema.index({ documento: 1 });
+trabajadorSchema.index({ activo: 1, nombre: 1 });
+trabajadorSchema.index({ correo: 1 });
 
 module.exports = mongoose.model('Trabajador', trabajadorSchema);

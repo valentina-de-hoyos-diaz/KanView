@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html class="light" lang="es">
+<head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>Kanview - <%= titulo %></title>
+<script nonce="<%= cspNonce %>" src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script nonce="<%= cspNonce %>">tailwind.config={theme:{extend:{colors:{primary:'#006565','primary-container':'#008080','on-primary':'#ffffff',background:'#fbf9f8','on-surface':'#1b1c1c','on-surface-variant':'#3e4949','surface-container-low':'#f5f3f3','surface-container-lowest':'#ffffff','outline-variant':'#bdc9c8',error:'#ba1a1a'},fontFamily:{sans:['Inter']}}}};</script>
+<style>body{background:#fbf9f8;font-family:'Inter',sans-serif}.card{background:#fff;box-shadow:8px 8px 16px rgba(0,0,0,.03),-8px -8px 16px #fff}.material-symbols-outlined{font-variation-settings:'FILL' 0,'wght' 300,'GRAD' 0,'opsz' 24}</style>
+</head>
+<body class="text-on-surface min-h-screen">
+<%- include('../partials/sidebar') %>
+
+<main class="md:ml-64 p-5 md:p-10 max-w-[1440px] mx-auto">
+  <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+    <div><h2 class="text-3xl font-semibold">Tareas</h2><p class="text-on-surface-variant mt-1">Tareas de producción, responsables y progreso por actividades.</p></div>
+    <button class="bg-primary text-on-primary px-6 py-3 rounded-2xl text-sm font-medium flex items-center gap-2" id="btn-agregar" type="button"><span class="material-symbols-outlined">add_task</span>Nueva tarea</button>
+  </div>
+  <div class="flex flex-col md:flex-row gap-3 mb-5">
+    <select class="px-4 py-2.5 rounded-xl border border-outline-variant bg-white text-sm" id="filtro-empleado"><option value="">Todos los trabajadores</option></select>
+    <select class="px-4 py-2.5 rounded-xl border border-outline-variant bg-white text-sm" id="filtro-pedido"><option value="">Todos los pedidos</option></select>
+    <select class="px-4 py-2.5 rounded-xl border border-outline-variant bg-white text-sm" id="filtro-estado"><option value="">Todos los estados</option><option>Pendiente</option><option>En progreso</option><option>Completado</option><option>Cancelado</option></select>
+  </div>
+  <div id="error" class="hidden mb-5 bg-red-50 border border-red-200 text-error text-sm px-4 py-3 rounded-xl"></div>
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-5" id="tablero">
+    <section class="rounded-2xl bg-surface-container-low border border-outline-variant/40 p-4 min-h-[300px]" data-columna="Pendiente"><h3 class="font-semibold mb-3 flex items-center justify-between">Pendiente <span class="text-xs bg-white rounded-full px-2 py-1" data-contador>0</span></h3><div class="space-y-3" data-lista></div></section>
+    <section class="rounded-2xl bg-surface-container-low border border-outline-variant/40 p-4 min-h-[300px]" data-columna="En progreso"><h3 class="font-semibold mb-3 flex items-center justify-between">En progreso <span class="text-xs bg-white rounded-full px-2 py-1" data-contador>0</span></h3><div class="space-y-3" data-lista></div></section>
+    <section class="rounded-2xl bg-surface-container-low border border-outline-variant/40 p-4 min-h-[300px]" data-columna="Completado"><h3 class="font-semibold mb-3 flex items-center justify-between">Completado <span class="text-xs bg-white rounded-full px-2 py-1" data-contador>0</span></h3><div class="space-y-3" data-lista></div></section>
+  </div>
+</main>
+
+<div id="modal" class="fixed inset-0 z-[70] hidden items-center justify-center bg-black/30 p-4">
+  <div class="card rounded-2xl w-full max-w-xl p-6 max-h-[90vh] overflow-y-auto">
+    <div class="flex items-center justify-between mb-5"><h3 class="text-2xl font-semibold" id="modal-titulo">Nueva tarea</h3><button id="btn-cerrar" type="button" class="w-10 h-10 rounded-full hover:bg-surface-container-low"><span class="material-symbols-outlined">close</span></button></div>
+    <form id="form-tarea" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <input id="tarea-id" type="hidden">
+      <div class="md:col-span-2"><label class="text-sm">Nombre</label><input class="w-full mt-1 px-4 py-2.5 border border-outline-variant rounded-xl" id="nombre" required></div>
+      <div class="md:col-span-2"><label class="text-sm">Descripción</label><textarea class="w-full mt-1 px-4 py-2.5 border border-outline-variant rounded-xl" id="descripcion" required rows="3"></textarea></div>
+      <div><label class="text-sm">Pedido</label><select class="w-full mt-1 px-4 py-2.5 border border-outline-variant rounded-xl" id="pedido" required></select></div>
+      <div><label class="text-sm">Responsable</label><select class="w-full mt-1 px-4 py-2.5 border border-outline-variant rounded-xl" id="empleado"><option value="">Sin asignar</option></select></div>
+      <div><label class="text-sm">Fecha inicio</label><input class="w-full mt-1 px-4 py-2.5 border border-outline-variant rounded-xl" id="fechaInicio" required type="date"></div>
+      <div><label class="text-sm">Fecha fin</label><input class="w-full mt-1 px-4 py-2.5 border border-outline-variant rounded-xl" id="fechaFin" required type="date"></div>
+      <div><label class="text-sm">Estado</label><select class="w-full mt-1 px-4 py-2.5 border border-outline-variant rounded-xl" id="estado"><option>Pendiente</option><option>En progreso</option><option>Completado</option><option>Cancelado</option></select></div>
+      <div class="md:col-span-2 flex justify-end gap-3"><button class="px-5 py-2.5 rounded-xl border border-outline-variant" id="btn-cancelar" type="button">Cancelar</button><button class="px-5 py-2.5 rounded-xl bg-primary text-on-primary" type="submit">Guardar</button></div>
+    </form>
+  </div>
+</div>
+
+<script nonce="<%= cspNonce %>">
+const token = localStorage.getItem('token');
+const rol = localStorage.getItem('rol') || '';
+const trabajadorSesion = localStorage.getItem('trabajadorId') || '';
+let tareas = [];
+let pedidos = [];
+let trabajadores = [];
+
+const escapeHtml = (valor) => String(valor ?? '').replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('"', '&quot;').replaceAll("'", '&#39;');
+const mostrarError = (mensaje) => { const el = document.getElementById('error'); el.textContent = mensaje; el.classList.remove('hidden'); };
+const limpiarError = () => document.getElementById('error').classList.add('hidden');
+const fecha = (valor) => { const f = new Date(valor); return Number.isNaN(f.getTime()) ? '—' : f.toLocaleDateString('es-CO', { timeZone: 'UTC' }); };
+
+const apiFetch = async (url, opciones = {}) => {
+  const respuesta = await fetch(url, { ...opciones, headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}`, ...(opciones.headers || {}) } });
+  if (respuesta.status === 401) { localStorage.clear(); window.location.replace('/login'); throw new Error('Sesión expirada'); }
+  const cuerpo = await respuesta.json().catch(() => ({}));
+  if (!respuesta.ok) throw new Error(cuerpo.message || 'Error del servidor');
+  return cuerpo;
+};
+
+const tarjeta = (tarea) => {
+  const progreso = tarea.progreso || { total: 0, completadas: 0, porcentaje: 0 };
+  const pedido = tarea.idPedido || {};
+  return `<article class="card rounded-xl p-4">
+    <div class="flex items-start justify-between gap-2"><span class="text-xs font-semibold text-primary">${escapeHtml(pedido.codigoPedido || 'Sin pedido')}</span>
+      <div class="flex gap-1"><button data-accion="editar" data-id="${tarea._id}" title="Editar"><span class="material-symbols-outlined text-[18px]">edit</span></button><button data-accion="eliminar" data-id="${tarea._id}" title="Desactivar"><span class="material-symbols-outlined text-[18px]">delete</span></button></div>
+    </div>
+    <h4 class="font-semibold mt-2">${escapeHtml(tarea.nombre)}</h4>
+    <p class="text-sm text-on-surface-variant mt-1">${escapeHtml(tarea.descripcion)}</p>
+    <p class="text-xs text-on-surface-variant mt-2">${escapeHtml(tarea.empleadoId?.nombre || 'Sin asignar')}</p>
+    <p class="text-xs text-on-surface-variant">${fecha(tarea.fechaInicio)} → ${fecha(tarea.fechaFin)}</p>
+    <div class="mt-3"><div class="flex justify-between text-xs mb-1"><span>Progreso</span><span>${progreso.completadas}/${progreso.total} · ${progreso.porcentaje}%</span></div><div class="h-2 rounded-full bg-surface-container-high"><div class="h-2 rounded-full bg-primary" style="width:${progreso.porcentaje}%"></div></div></div>
+    ${tarea.estado !== 'Completado' ? `<button class="mt-3 w-full rounded-lg bg-primary text-on-primary text-xs font-medium py-2" data-accion="confirmar" data-id="${tarea._id}">Confirmar tarea</button>` : ''}
+    <a class="mt-2 block text-center text-xs text-primary underline" href="/actividades?tarea=${tarea._id}">Ver actividades</a>
+  </article>`;
+};
+
+const renderizar = () => {
+  const columnas = { Pendiente: [], 'En progreso': [], Completado: [] };
+  tareas.forEach((tarea) => {
+    const estado = tarea.estado === 'En proceso' ? 'En progreso' : tarea.estado;
+    (columnas[estado] || columnas.Pendiente).push(tarea);
+  });
+  document.querySelectorAll('[data-columna]').forEach((columna) => {
+    const lista = columna.querySelector('[data-lista]');
+    const datos = columnas[columna.dataset.columna] || [];
+    columna.querySelector('[data-contador]').textContent = datos.length;
+    lista.innerHTML = datos.length ? datos.map(tarjeta).join('') : '<p class="text-sm text-on-surface-variant text-center py-8">Sin tareas</p>';
+  });
+};
+
+const cargarCatalogos = async () => {
+  const [respuestaPedidos, respuestaTrabajadores] = await Promise.all([apiFetch('/api/pedidos'), apiFetch('/api/trabajadores')]);
+  pedidos = respuestaPedidos.data || [];
+  trabajadores = respuestaTrabajadores.data || [];
+
+  document.getElementById('filtro-empleado').innerHTML = '<option value="">Todos los trabajadores</option>' + trabajadores.map((t) => `<option value="${t._id}">${escapeHtml(t.nombre)}</option>`).join('');
+  document.getElementById('filtro-pedido').innerHTML = '<option value="">Todos los pedidos</option>' + pedidos.map((p) => `<option value="${p._id}">${escapeHtml(p.codigoPedido)} · ${escapeHtml(p.cliente?.nombre || '')}</option>`).join('');
+  document.getElementById('pedido').innerHTML = '<option value="">Selecciona un pedido</option>' + pedidos.map((p) => `<option value="${p._id}">${escapeHtml(p.codigoPedido)} · ${escapeHtml(p.cliente?.nombre || '')}</option>`).join('');
+  document.getElementById('empleado').innerHTML = '<option value="">Sin asignar</option>' + trabajadores.map((t) => `<option value="${t._id}">${escapeHtml(t.nombre)} (${escapeHtml(t.cargo)})</option>`).join('');
+};
+
+const cargar = async () => {
+  try {
+    limpiarError();
+    const filtros = new URLSearchParams();
+    if (document.getElementById('filtro-empleado').value) filtros.set('empleadoId', document.getElementById('filtro-empleado').value);
+    if (document.getElementById('filtro-pedido').value) filtros.set('pedidoId', document.getElementById('filtro-pedido').value);
+    if (document.getElementById('filtro-estado').value) filtros.set('estado', document.getElementById('filtro-estado').value);
+    const respuesta = await apiFetch(`/api/tareas?${filtros.toString()}`);
+    tareas = respuesta.data || [];
+    renderizar();
+  } catch (error) { mostrarError(error.message); }
+};
+
+const modal = document.getElementById('modal');
+const form = document.getElementById('form-tarea');
+
+const abrirModal = (tarea = null) => {
+  form.reset();
+  document.getElementById('tarea-id').value = tarea ? tarea._id : '';
+  document.getElementById('modal-titulo').textContent = tarea ? 'Editar tarea' : 'Nueva tarea';
+  document.getElementById('pedido').value = tarea && tarea.idPedido ? (tarea.idPedido._id || tarea.idPedido) : '';
+  document.getElementById('empleado').value = tarea && tarea.empleadoId ? (tarea.empleadoId._id || tarea.empleadoId) : '';
+  if (tarea) {
+    document.getElementById('nombre').value = tarea.nombre || '';
+    document.getElementById('descripcion').value = tarea.descripcion || '';
+    document.getElementById('fechaInicio').value = String(tarea.fechaInicio || '').slice(0, 10);
+    document.getElementById('fechaFin').value = String(tarea.fechaFin || '').slice(0, 10);
+    document.getElementById('estado').value = tarea.estado || 'Pendiente';
+  } else {
+    document.getElementById('fechaInicio').value = new Date().toISOString().slice(0, 10);
+    document.getElementById('fechaFin').value = new Date().toISOString().slice(0, 10);
+  }
+  modal.classList.remove('hidden'); modal.classList.add('flex');
+};
+const cerrarModal = () => { modal.classList.add('hidden'); modal.classList.remove('flex'); };
+
+form.addEventListener('submit', async (evento) => {
+  evento.preventDefault();
+  const id = document.getElementById('tarea-id').value;
+  const datos = {
+    nombre: document.getElementById('nombre').value.trim(),
+    descripcion: document.getElementById('descripcion').value.trim(),
+    idPedido: document.getElementById('pedido').value,
+    empleadoId: document.getElementById('empleado').value || null,
+    fechaInicio: document.getElementById('fechaInicio').value,
+    fechaFin: document.getElementById('fechaFin').value,
+    estado: document.getElementById('estado').value,
+  };
+  try {
+    if (id) await apiFetch(`/api/tareas/${id}`, { method: 'PUT', body: JSON.stringify(datos) });
+    else await apiFetch('/api/tareas', { method: 'POST', body: JSON.stringify(datos) });
+    cerrarModal(); await cargar();
+  } catch (error) { mostrarError(error.message); }
+});
+
+document.getElementById('tablero').addEventListener('click', async (evento) => {
+  const boton = evento.target.closest('button[data-accion]');
+  if (!boton) return;
+  const tarea = tareas.find((item) => item._id === boton.dataset.id);
+  if (!tarea) return;
+
+  if (boton.dataset.accion === 'editar') { abrirModal(tarea); return; }
+  if (boton.dataset.accion === 'eliminar') {
+    if (!window.confirm(`¿Desactivar la tarea "${tarea.nombre}"?`)) return;
+    try { await apiFetch(`/api/tareas/${tarea._id}`, { method: 'DELETE' }); await cargar(); } catch (error) { mostrarError(error.message); }
+    return;
+  }
+  if (boton.dataset.accion === 'confirmar') {
+    try { await apiFetch(`/api/tareas/${tarea._id}/confirmar`, { method: 'PATCH', body: '{}' }); await cargar(); } catch (error) { mostrarError(error.message); }
+  }
+});
+
+document.getElementById('btn-agregar').addEventListener('click', () => abrirModal());
+document.getElementById('btn-cerrar').addEventListener('click', cerrarModal);
+document.getElementById('btn-cancelar').addEventListener('click', cerrarModal);
+modal.addEventListener('click', (evento) => { if (evento.target === modal) cerrarModal(); });
+['filtro-empleado', 'filtro-pedido', 'filtro-estado'].forEach((id) => document.getElementById(id).addEventListener('change', cargar));
+document.getElementById('btn-logout-sidebar').addEventListener('click', async () => {
+  try { await apiFetch('/api/auth/logout', { method: 'POST' }); } catch (error) { console.warn(error.message); }
+  localStorage.clear(); window.location.replace('/login');
+});
+
+if (!token) window.location.replace('/login');
+else if (rol === 'cliente') window.location.replace('/portal');
+else {
+  if (trabajadorSesion && !['admin', 'secretaria'].includes(rol)) {
+    document.getElementById('filtro-empleado').value = trabajadorSesion;
+  }
+  cargarCatalogos().then(cargar).catch((error) => mostrarError(error.message));
+}
+</script>
+</body>
+</html>

@@ -1,7 +1,9 @@
 const mongoose = require('mongoose');
 const { Schema } = mongoose;
 
-const ROLES = ['admin', 'usuario'];
+const ROLES = ['admin', 'secretaria', 'trabajador', 'usuario'];
+const ROLES_STAFF = ['admin', 'secretaria', 'trabajador', 'usuario'];
+const ROLES_GESTION = ['admin', 'secretaria'];
 
 const usuarioSchema = new Schema(
   {
@@ -15,10 +17,28 @@ const usuarioSchema = new Schema(
       match: [/^[^\s@]+@[^\s@]+\.[^\s@]+$/, 'El email no es válido'],
     },
     password: { type: String, required: true, select: false },
-    rol: { type: String, enum: ROLES, default: 'usuario' },
+    rol: { type: String, enum: ROLES, default: 'trabajador' },
     activo: { type: Boolean, default: true },
+    trabajadorId: {
+      type: Schema.Types.ObjectId,
+      ref: 'Trabajador',
+      default: undefined,
+    },
+    debeCambiarPassword: { type: Boolean, default: false },
+    ultimoAcceso: { type: Date, default: null },
   },
   { collection: 'usuarios', timestamps: true }
+);
+
+usuarioSchema.index({ rol: 1, activo: 1 });
+usuarioSchema.index({ nombre: 1 });
+usuarioSchema.index(
+  { trabajadorId: 1 },
+  {
+    unique: true,
+    partialFilterExpression: { trabajadorId: { $type: 'objectId' } },
+    name: 'usuario_trabajador_unico',
+  }
 );
 
 usuarioSchema.methods.toJSON = function () {
@@ -31,3 +51,5 @@ const Usuario = mongoose.model('Usuario', usuarioSchema);
 
 module.exports = Usuario;
 module.exports.ROLES = ROLES;
+module.exports.ROLES_STAFF = ROLES_STAFF;
+module.exports.ROLES_GESTION = ROLES_GESTION;

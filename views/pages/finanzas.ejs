@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html class="light" lang="es">
+<head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>Kanview - <%= titulo %></title>
+<script nonce="<%= cspNonce %>" src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script nonce="<%= cspNonce %>">tailwind.config={theme:{extend:{colors:{primary:'#006565','primary-container':'#008080','on-primary':'#ffffff',background:'#fbf9f8','on-surface':'#1b1c1c','on-surface-variant':'#3e4949','surface-container-low':'#f5f3f3','surface-container-lowest':'#ffffff','outline-variant':'#bdc9c8',error:'#ba1a1a'},fontFamily:{sans:['Inter']}}}};</script>
+<style>body{background:#fbf9f8;font-family:'Inter',sans-serif}.card{background:#fff;box-shadow:8px 8px 16px rgba(0,0,0,.03),-8px -8px 16px #fff}.material-symbols-outlined{font-variation-settings:'FILL' 0,'wght' 300,'GRAD' 0,'opsz' 24}</style>
+</head>
+<body class="text-on-surface min-h-screen">
+<%- include('../partials/sidebar') %>
+
+<main class="md:ml-64 p-5 md:p-10 max-w-[1440px] mx-auto">
+  <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+    <div><h2 class="text-3xl font-semibold">Finanzas</h2><p class="text-on-surface-variant mt-1">Ingresos, gastos, balance y margen por pedido.</p></div>
+    <div class="flex gap-2"><select class="px-4 py-2.5 rounded-xl border border-outline-variant bg-white text-sm" id="periodo"><option value="3">3 meses</option><option value="6" selected>6 meses</option><option value="12">12 meses</option></select><button class="bg-primary text-on-primary px-6 py-3 rounded-2xl text-sm font-medium flex items-center gap-2" id="btn-agregar" type="button"><span class="material-symbols-outlined">add</span>Registrar ingreso/costo</button></div>
+  </div>
+  <div id="error" class="hidden mb-5 bg-red-50 border border-red-200 text-error text-sm px-4 py-3 rounded-xl"></div>
+  <section class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-5 mb-6">
+    <article class="card rounded-2xl p-5"><p class="text-sm text-on-surface-variant">Ingresos</p><p class="text-2xl font-bold mt-2 text-emerald-700" id="ingresos">—</p></article>
+    <article class="card rounded-2xl p-5"><p class="text-sm text-on-surface-variant">Gastos</p><p class="text-2xl font-bold mt-2 text-red-700" id="gastos">—</p></article>
+    <article class="card rounded-2xl p-5"><p class="text-sm text-on-surface-variant">Balance</p><p class="text-2xl font-bold mt-2" id="balance">—</p></article>
+    <article class="card rounded-2xl p-5"><p class="text-sm text-on-surface-variant">Margen</p><p class="text-2xl font-bold mt-2" id="margen">—</p></article>
+  </section>
+  <div class="card rounded-2xl overflow-x-auto">
+    <table class="w-full text-left text-sm min-w-[1050px]">
+      <thead class="text-xs uppercase tracking-wide text-on-surface-variant border-b border-outline-variant/40"><tr><th class="py-4 px-4">Fecha</th><th class="py-4 px-4">Pedido</th><th class="py-4 px-4">Fuente</th><th class="py-4 px-4">Ingresos</th><th class="py-4 px-4">Gastos</th><th class="py-4 px-4">Balance</th><th class="py-4 px-4 text-right">Acciones</th></tr></thead>
+      <tbody id="tabla-finanzas" class="divide-y divide-outline-variant/20"><tr><td class="py-10 text-center text-on-surface-variant" colspan="7">Cargando análisis...</td></tr></tbody>
+    </table>
+  </div>
+</main>
+
+<div id="modal" class="fixed inset-0 z-[70] hidden items-center justify-center bg-black/30 p-4">
+  <div class="card rounded-2xl w-full max-w-lg p-6">
+    <div class="flex items-center justify-between mb-5"><h3 class="text-2xl font-semibold" id="modal-titulo">Registrar ingreso/costo</h3><button id="btn-cerrar" type="button" class="w-10 h-10 rounded-full hover:bg-surface-container-low"><span class="material-symbols-outlined">close</span></button></div>
+    <form id="form-finanza" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <input id="finanza-id" type="hidden">
+      <div class="md:col-span-2">
+        <label class="text-sm" for="pedido">Pedido asociado</label>
+        <select class="w-full mt-1 px-4 py-2.5 border border-outline-variant rounded-xl" id="pedido">
+          <option value="">Sin pedido asociado</option>
+        </select>
+        <p class="text-xs text-on-surface-variant mt-1" id="pedido-info">Selecciona el pedido que generó este ingreso o costo.</p>
+      </div>
+      <div><label class="text-sm">Fecha</label><input class="w-full mt-1 px-4 py-2.5 border border-outline-variant rounded-xl" id="fecha" required type="date"></div>
+      <div><label class="text-sm">Fuente</label><select class="w-full mt-1 px-4 py-2.5 border border-outline-variant rounded-xl" id="fuente"><option value="directa">Venta directa</option><option value="mayorista">Mayorista</option><option value="personalizado">Proyecto personalizado</option><option value="otro">Otro</option></select></div>
+      <div><label class="text-sm">Ingresos</label><input class="w-full mt-1 px-4 py-2.5 border border-outline-variant rounded-xl" id="ingresos-input" min="0" required step="0.01" type="number"></div>
+      <div><label class="text-sm">Gastos</label><input class="w-full mt-1 px-4 py-2.5 border border-outline-variant rounded-xl" id="gastos-input" min="0" required step="0.01" type="number"></div>
+      <div class="md:col-span-2 flex justify-end gap-3"><button class="px-5 py-2.5 rounded-xl border border-outline-variant" id="btn-cancelar" type="button">Cancelar</button><button class="px-5 py-2.5 rounded-xl bg-primary text-on-primary" type="submit">Guardar</button></div>
+    </form>
+  </div>
+</div>
+
+<script nonce="<%= cspNonce %>">
+const token = localStorage.getItem('token');
+const rol = localStorage.getItem('rol') || '';
+let finanzas = [];
+let pedidos = [];
+
+const escapeHtml = (valor) => String(valor ?? '').replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('"', '&quot;').replaceAll("'", '&#39;');
+const mostrarError = (mensaje) => { const el = document.getElementById('error'); el.textContent = mensaje; el.classList.remove('hidden'); };
+const limpiarError = () => document.getElementById('error').classList.add('hidden');
+const decimal = (valor) => Number(valor && valor.$numberDecimal ? valor.$numberDecimal : valor || 0);
+const moneda = (valor) => Number(valor || 0).toLocaleString('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const fecha = (valor) => { const f = new Date(valor); return Number.isNaN(f.getTime()) ? '—' : f.toLocaleDateString('es-CO', { timeZone: 'UTC' }); };
+
+const apiFetch = async (url, opciones = {}) => {
+  const respuesta = await fetch(url, { ...opciones, headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}`, ...(opciones.headers || {}) } });
+  if (respuesta.status === 401) { localStorage.clear(); window.location.replace('/login'); throw new Error('Sesión expirada'); }
+  const cuerpo = await respuesta.json().catch(() => ({}));
+  if (!respuesta.ok) throw new Error(cuerpo.message || 'Error del servidor');
+  return cuerpo;
+};
+
+const totalPedido = (pedido) => {
+  if (!pedido) return 0;
+  if (pedido.factura && Number.isFinite(Number(pedido.factura.total))) return Number(pedido.factura.total);
+  const precio = Number(pedido.producto && pedido.producto.precio ? pedido.producto.precio : 0);
+  const cantidad = Number(pedido.producto && pedido.producto.cantidad ? pedido.producto.cantidad : 0);
+  return precio * cantidad;
+};
+
+const renderizar = () => {
+  const tbody = document.getElementById('tabla-finanzas');
+  if (!finanzas.length) { tbody.innerHTML = '<tr><td class="py-10 text-center text-on-surface-variant" colspan="7">No hay análisis financieros.</td></tr>'; return; }
+  tbody.innerHTML = finanzas.map((f) => {
+    const pedido = f.pedido || null;
+    const pedidoTexto = pedido ? `${pedido.codigoPedido}${pedido.cliente ? ` · ${pedido.cliente.nombre}` : ''}` : 'Sin pedido';
+    const balance = decimal(f.fuentesIngresos) - decimal(f.gastos);
+    return `<tr class="hover:bg-surface-container-low/60">
+    <td class="py-3 px-4">${fecha(f.fecha)}</td>
+    <td class="py-3 px-4">${escapeHtml(pedidoTexto)}</td>
+    <td class="py-3 px-4">${escapeHtml(f.fuenteIngreso)}</td>
+    <td class="py-3 px-4 text-emerald-700">${moneda(decimal(f.fuentesIngresos))}</td><td class="py-3 px-4 text-red-700">${moneda(decimal(f.gastos))}</td>
+    <td class="py-3 px-4 font-semibold ${balance >= 0 ? 'text-emerald-700' : 'text-error'}">${moneda(balance)}</td>
+    <td class="py-3 px-4 text-right whitespace-nowrap"><button class="p-2 text-on-surface-variant hover:text-primary" data-accion="editar" data-id="${f._id}"><span class="material-symbols-outlined text-[20px]">edit</span></button><button class="p-2 text-on-surface-variant hover:text-error" data-accion="eliminar" data-id="${f._id}"><span class="material-symbols-outlined text-[20px]">delete</span></button></td>
+  </tr>`;
+  }).join('');
+};
+
+const cargar = async () => {
+  try {
+    limpiarError();
+    const meses = document.getElementById('periodo').value;
+    const [respuesta, resumen, respuestaPedidos] = await Promise.all([
+      apiFetch('/api/finanzas?limite=200'),
+      apiFetch(`/api/finanzas/resumen?meses=${meses}`),
+      apiFetch('/api/pedidos?incluirInactivos=true&limite=200'),
+    ]);
+    finanzas = respuesta.data || [];
+    pedidos = respuestaPedidos.data || [];
+    document.getElementById('pedido').innerHTML = '<option value="">Sin pedido asociado</option>' + pedidos.map((p) => `<option value="${p._id}">${escapeHtml(p.codigoPedido)} · ${escapeHtml(p.cliente?.nombre || '')} · ${escapeHtml(p.producto?.nombre || '')}</option>`).join('');
+    const datos = resumen.data;
+    document.getElementById('ingresos').textContent = moneda(datos.ingresos);
+    document.getElementById('gastos').textContent = moneda(datos.gastos);
+    document.getElementById('balance').textContent = moneda(datos.balance);
+    document.getElementById('margen').textContent = `${datos.margen}%`;
+    renderizar();
+  } catch (error) { mostrarError(error.message); }
+};
+
+const modal = document.getElementById('modal');
+const form = document.getElementById('form-finanza');
+const abrirModal = (f = null) => {
+  form.reset();
+  document.getElementById('finanza-id').value = f ? f._id : '';
+  document.getElementById('modal-titulo').textContent = f ? 'Editar movimiento' : 'Registrar ingreso/costo';
+  document.getElementById('fecha').value = f ? String(f.fecha).slice(0, 10) : new Date().toISOString().slice(0, 10);
+  if (f) {
+    document.getElementById('pedido').value = f.pedido ? (f.pedido._id || f.pedido) : '';
+    document.getElementById('fuente').value = f.fuenteIngreso || 'directa';
+    document.getElementById('ingresos-input').value = decimal(f.fuentesIngresos);
+    document.getElementById('gastos-input').value = decimal(f.gastos);
+  }
+  actualizarInfoPedido();
+  modal.classList.remove('hidden'); modal.classList.add('flex');
+};
+
+const actualizarInfoPedido = () => {
+  const id = document.getElementById('pedido').value;
+  const pedido = pedidos.find((item) => item._id === id);
+  const info = document.getElementById('pedido-info');
+  if (!pedido) {
+    info.textContent = 'Selecciona el pedido que generó este ingreso o costo.';
+    return;
+  }
+
+  const cliente = pedido.cliente?.nombre || 'Sin cliente';
+  const producto = pedido.producto?.nombre || 'Sin producto';
+  const cantidad = Number(pedido.producto?.cantidad || 0);
+  const total = totalPedido(pedido);
+  info.textContent = `${cliente} · ${producto} x${cantidad} · Total del pedido: ${moneda(total)}`;
+
+  if (!document.getElementById('finanza-id').value) {
+    if (!document.getElementById('ingresos-input').value) {
+      document.getElementById('ingresos-input').value = total;
+    }
+  }
+};
+
+document.getElementById('pedido').addEventListener('change', actualizarInfoPedido);
+const cerrarModal = () => { modal.classList.add('hidden'); modal.classList.remove('flex'); };
+
+form.addEventListener('submit', async (evento) => {
+  evento.preventDefault();
+  const id = document.getElementById('finanza-id').value;
+  const datos = {
+    fecha: document.getElementById('fecha').value,
+    pedido: document.getElementById('pedido').value || null,
+    fuenteIngreso: document.getElementById('fuente').value,
+    fuentesIngresos: Number(document.getElementById('ingresos-input').value),
+    gastos: Number(document.getElementById('gastos-input').value),
+  };
+  try {
+    if (id) await apiFetch(`/api/finanzas/${id}`, { method: 'PUT', body: JSON.stringify(datos) });
+    else await apiFetch('/api/finanzas', { method: 'POST', body: JSON.stringify(datos) });
+    cerrarModal(); await cargar();
+  } catch (error) { mostrarError(error.message); }
+});
+
+document.getElementById('tabla-finanzas').addEventListener('click', async (evento) => {
+  const boton = evento.target.closest('button[data-accion]');
+  if (!boton) return;
+  const f = finanzas.find((item) => item._id === boton.dataset.id);
+  if (!f) return;
+  if (boton.dataset.accion === 'editar') return abrirModal(f);
+  if (!window.confirm('¿Desactivar este análisis financiero?')) return;
+  try { await apiFetch(`/api/finanzas/${f._id}`, { method: 'DELETE' }); await cargar(); } catch (error) { mostrarError(error.message); }
+});
+
+document.getElementById('btn-agregar').addEventListener('click', () => abrirModal());
+document.getElementById('btn-cerrar').addEventListener('click', cerrarModal);
+document.getElementById('btn-cancelar').addEventListener('click', cerrarModal);
+document.getElementById('periodo').addEventListener('change', cargar);
+modal.addEventListener('click', (evento) => { if (evento.target === modal) cerrarModal(); });
+document.getElementById('btn-logout-sidebar').addEventListener('click', async () => {
+  try { await apiFetch('/api/auth/logout', { method: 'POST' }); } catch (error) { console.warn(error.message); }
+  localStorage.clear(); window.location.replace('/login');
+});
+
+if (!token) window.location.replace('/login');
+else if (!['admin', 'secretaria'].includes(rol)) window.location.replace('/dashboard');
+else cargar();
+</script>
+</body>
+</html>

@@ -75,7 +75,10 @@ const firmarToken = (usuario, sesion) =>
     {
       sub: usuario._id.toString(),
       sid: sesion._id.toString(),
-      rol: usuario.rol,
+      rol: usuario.rol || (sesion.tipoUsuario === 'Cliente' ? 'cliente' : undefined),
+      tipo: sesion.tipoUsuario,
+      tokenType: 'access',
+      jti: crypto.randomUUID(),
     },
     config.jwtSecret,
     {
@@ -86,12 +89,42 @@ const firmarToken = (usuario, sesion) =>
     }
   );
 
-const verificarToken = (token) =>
-  jwt.verify(token, config.jwtSecret, {
+const firmarRefreshToken = (usuario, sesion) =>
+  jwt.sign(
+    {
+      sub: usuario._id.toString(),
+      sid: sesion._id.toString(),
+      tokenType: 'refresh',
+      jti: crypto.randomUUID(),
+    },
+    config.jwtSecret,
+    {
+      algorithm: ALGORITMO,
+      expiresIn: config.jwtRefreshExpiresIn,
+      issuer: EMISOR,
+      audience: AUDIENCIA,
+    }
+  );
+
+const verificarToken = (token, tipoEsperado = 'access') => {
+  const payload = jwt.verify(token, config.jwtSecret, {
     algorithms: [ALGORITMO],
     issuer: EMISOR,
     audience: AUDIENCIA,
   });
+
+  if (tipoEsperado === 'refresh' && payload.tokenType !== 'refresh') {
+    throw new Error('El token no es un refresh token');
+  }
+
+  if (tipoEsperado === 'access' && payload.tokenType === 'refresh') {
+    throw new Error('El refresh token no sirve como access token');
+  }
+
+  return payload;
+};
+
+const verificarRefreshToken = (token) => verificarToken(token, 'refresh');
 
 const compararApiKey = (valor) => {
   if (typeof valor !== 'string' || valor.length === 0) {
@@ -117,6 +150,8 @@ module.exports = {
   buscarSesionPorId,
   revocarSesion,
   firmarToken,
+  firmarRefreshToken,
   verificarToken,
+  verificarRefreshToken,
   compararApiKey,
 };

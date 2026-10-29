@@ -4,10 +4,10 @@
 <meta charset="utf-8">
 <meta content="width=device-width, initial-scale=1.0" name="viewport">
 <title>Kanview - <%= titulo %></title>
-<script src="https://cdn.tailwindcss.com"></script>
+<script nonce="<%= cspNonce %>" src="https://cdn.tailwindcss.com"></script>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
 <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
-<script id="tailwind-config">
+<script nonce="<%= cspNonce %>" id="tailwind-config">
         tailwind.config = {
             theme: {
                 extend: {
@@ -62,13 +62,21 @@
 <p class="text-sm font-medium text-on-surface">Tus pedidos</p>
 <p class="text-xs text-on-surface-variant mt-1">Crea pedidos y revisa su estado en el tablero Kanban.</p>
 </a>
+<a class="rounded-2xl bg-surface-container-low border border-outline-variant/30 p-4 block hover:border-primary/40 transition-colors" href="/catalogo">
+<p class="text-sm font-medium text-on-surface">Catálogo</p>
+<p class="text-xs text-on-surface-variant mt-1">Explora los productos disponibles del taller.</p>
+</a>
+<a class="rounded-2xl bg-surface-container-low border border-outline-variant/30 p-4 block hover:border-primary/40 transition-colors" href="/mensajeria">
+<p class="text-sm font-medium text-on-surface">Mensajería</p>
+<p class="text-xs text-on-surface-variant mt-1">Habla con los trabajadores asignados a tus pedidos.</p>
+</a>
 <button class="w-full bg-primary hover:brightness-110 text-on-primary text-sm font-medium py-3 rounded-xl transition-all active:scale-[0.98] flex items-center justify-center gap-2" id="btn-logout">
 <span class="material-symbols-outlined text-[20px]">logout</span>
                 Cerrar sesión
             </button>
 </div>
 </main>
-<script>
+<script nonce="<%= cspNonce %>">
         const token = localStorage.getItem('token');
         const tipo = localStorage.getItem('tipo');
 

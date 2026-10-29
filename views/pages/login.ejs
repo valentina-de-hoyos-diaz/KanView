@@ -4,10 +4,10 @@
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
 <title>Kanview - Iniciar Sesión</title>
-<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script nonce="<%= cspNonce %>" src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
 <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
-<script id="tailwind-config">
+<script nonce="<%= cspNonce %>" id="tailwind-config">
         tailwind.config = {
             darkMode: "class",
             theme: {
@@ -155,10 +155,7 @@
                     <span class="material-symbols-outlined text-[20px]">arrow_forward</span>
 </button>
 </form>
-<p class="text-center font-body-md text-body-md text-on-surface-variant mt-4">
-                ¿No tienes una cuenta?
-                <a class="text-primary font-semibold hover:underline decoration-2 underline-offset-4" href="/trabajadores/registro">Regístrate</a>
-</p>
+
 </div>
 </main>
 <!-- Right Side: Decorative Image & Branding -->
@@ -186,7 +183,7 @@
 <div class="w-2 h-2 rounded-full bg-outline-variant/50"></div>
 </div>
 </aside>
-<script>
+<script nonce="<%= cspNonce %>">
         const formLogin = document.getElementById('form-login');
         const errorLogin = document.getElementById('login-error');
         const botonLogin = document.getElementById('btn-login');
@@ -235,9 +232,12 @@
 
                 localStorage.setItem('token', datos.data.token);
                 localStorage.setItem('tipo', esEmail ? 'Usuario' : 'Cliente');
+                localStorage.setItem('rol', perfil && perfil.rol ? perfil.rol : (esEmail ? '' : 'cliente'));
+                localStorage.setItem('trabajadorId', perfil && perfil.trabajadorId ? perfil.trabajadorId : '');
+                localStorage.setItem('usuarioId', perfil && perfil._id ? perfil._id : '');
                 localStorage.setItem('nombre', perfil ? perfil.nombre : '');
 
-                window.location.href = esEmail ? '/clientes' : '/portal';
+                window.location.href = esEmail ? '/dashboard' : '/portal';
             } catch (error) {
                 mostrarErrorLogin('No se pudo conectar con el servidor.');
             } finally {

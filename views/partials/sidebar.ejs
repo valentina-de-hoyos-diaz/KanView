@@ -1,0 +1,42 @@
+<aside class="w-64 h-screen fixed left-0 top-0 hidden md:flex flex-col py-4 px-4 z-50 bg-primary-container text-on-primary shadow-[8px_8px_16px_rgba(0,0,0,0.03),-8px_-8px_16px_#FFFFFF]">
+  <div class="mb-6 px-4 flex items-center gap-3">
+    <div class="w-10 h-10 rounded-full bg-white/15 flex items-center justify-center font-bold">K</div>
+    <div>
+      <h1 class="text-xl font-bold">Kanview</h1>
+      <p class="text-xs text-on-primary/80">Manufactura Pro</p>
+    </div>
+  </div>
+
+  <nav class="flex-1 overflow-y-auto space-y-1 text-sm">
+    <a data-staff data-sidebar-link class="flex items-center gap-3 px-4 py-3 rounded-lg transition-colors hover:bg-white/10" href="/dashboard"><span class="material-symbols-outlined">dashboard</span>Panel</a>
+    <a data-sidebar-link class="flex items-center gap-3 px-4 py-3 rounded-lg transition-colors hover:bg-white/10" href="/pedidos"><span class="material-symbols-outlined">shopping_cart</span>Pedidos</a>
+    <a data-staff data-sidebar-link class="flex items-center gap-3 px-4 py-3 rounded-lg transition-colors hover:bg-white/10" href="/tareas"><span class="material-symbols-outlined">assignment</span>Tareas</a>
+    <a data-staff data-sidebar-link class="flex items-center gap-3 px-4 py-3 rounded-lg transition-colors hover:bg-white/10" href="/actividades"><span class="material-symbols-outlined">history</span>Actividades</a>
+    <a data-staff data-sidebar-link class="flex items-center gap-3 px-4 py-3 rounded-lg transition-colors hover:bg-white/10" href="/calendario"><span class="material-symbols-outlined">calendar_today</span>Calendario</a>
+    <a data-staff data-sidebar-link class="flex items-center gap-3 px-4 py-3 rounded-lg transition-colors hover:bg-white/10" href="/productos"><span class="material-symbols-outlined">sell</span>Productos</a>
+    <a data-staff data-sidebar-link class="flex items-center gap-3 px-4 py-3 rounded-lg transition-colors hover:bg-white/10" href="/inventario"><span class="material-symbols-outlined">inventory_2</span>Inventario</a>
+    <a data-sidebar-link class="flex items-center gap-3 px-4 py-3 rounded-lg transition-colors hover:bg-white/10" href="/catalogo"><span class="material-symbols-outlined">menu_book</span>Catálogo</a>
+    <a data-staff data-sidebar-link class="flex items-center gap-3 px-4 py-3 rounded-lg transition-colors hover:bg-white/10" href="/clientes"><span class="material-symbols-outlined">group</span>Clientes</a>
+    <a data-staff data-sidebar-link class="flex items-center gap-3 px-4 py-3 rounded-lg transition-colors hover:bg-white/10" href="/trabajadores"><span class="material-symbols-outlined">badge</span>Trabajadores</a>
+    <a data-staff data-sidebar-link class="flex items-center gap-3 px-4 py-3 rounded-lg transition-colors hover:bg-white/10" href="/usuarios"><span class="material-symbols-outlined">manage_accounts</span>Usuarios</a>
+    <a data-staff data-sidebar-link class="flex items-center gap-3 px-4 py-3 rounded-lg transition-colors hover:bg-white/10" href="/finanzas"><span class="material-symbols-outlined">payments</span>Finanzas</a>
+    <a data-staff data-sidebar-link class="flex items-center gap-3 px-4 py-3 rounded-lg transition-colors hover:bg-white/10" href="/auditoria"><span class="material-symbols-outlined">fact_check</span>Auditoría</a>
+    <a data-sidebar-link class="flex items-center gap-3 px-4 py-3 rounded-lg transition-colors hover:bg-white/10" href="/mensajeria"><span class="material-symbols-outlined">chat_bubble</span><span class="flex-1">Mensajería</span><span class="text-xs bg-white/25 rounded-full px-2 py-0.5" id="badge-no-leidos">0</span></a>
+    <button class="flex w-full items-center gap-3 px-4 py-3 rounded-lg transition-colors hover:bg-white/10 mt-4" id="btn-logout-sidebar" type="button"><span class="material-symbols-outlined">logout</span>Cerrar sesión</button>
+  </nav>
+</aside>
+
+<script nonce="<%= cspNonce %>">
+(() => {
+  const ruta = (window.location.pathname.replace(/\/$/, '') || '/');
+  document.querySelectorAll('[data-sidebar-link]').forEach((enlace) => {
+    if (enlace.getAttribute('href') === ruta) {
+      enlace.classList.add('bg-white/20', 'border-l-4', 'border-white', 'font-bold');
+    }
+  });
+
+  if (localStorage.getItem('tipo') === 'Cliente') {
+    document.querySelectorAll('[data-staff]').forEach((elemento) => elemento.classList.add('hidden'));
+  }
+})();
+</script>

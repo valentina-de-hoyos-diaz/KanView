@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html class="light" lang="es">
+<head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>Kanview - <%= titulo %></title>
+<script nonce="<%= cspNonce %>" src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script nonce="<%= cspNonce %>">tailwind.config={theme:{extend:{colors:{primary:'#006565','primary-container':'#008080','on-primary':'#ffffff',background:'#fbf9f8','on-surface':'#1b1c1c','on-surface-variant':'#3e4949','surface-container-low':'#f5f3f3','surface-container-lowest':'#ffffff','surface-container-high':'#eae8e7','outline-variant':'#bdc9c8',error:'#ba1a1a'},fontFamily:{sans:['Inter']}}}};</script>
+<style>body{background:#fbf9f8;font-family:'Inter',sans-serif}.card{background:#fff;box-shadow:8px 8px 16px rgba(0,0,0,.03),-8px -8px 16px #fff}.material-symbols-outlined{font-variation-settings:'FILL' 0,'wght' 300,'GRAD' 0,'opsz' 24}</style>
+</head>
+<body class="text-on-surface min-h-screen">
+<%- include('../partials/sidebar') %>
+
+<main class="md:ml-64 p-5 md:p-10 max-w-[1440px] mx-auto">
+  <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-7">
+    <div><h2 class="text-3xl font-semibold">Catálogo de productos</h2><p class="text-on-surface-variant mt-1">Explora los productos disponibles del taller.</p></div>
+    <a data-staff class="bg-primary text-on-primary px-6 py-3 rounded-2xl text-sm font-medium flex items-center justify-center gap-2" href="/productos"><span class="material-symbols-outlined">settings</span>Gestionar productos</a>
+  </div>
+  <div class="flex flex-col md:flex-row gap-3 mb-6">
+    <div class="relative flex-1"><span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-[20px]">search</span><input class="w-full pl-10 pr-4 py-3 rounded-xl border border-outline-variant bg-white text-sm" id="buscador" placeholder="Buscar por nombre, código o descripción"></div>
+    <select class="px-4 py-3 rounded-xl border border-outline-variant bg-white text-sm" id="categoria"><option value="">Todas las categorías</option></select>
+  </div>
+  <div id="error" class="hidden mb-5 bg-red-50 border border-red-200 text-error text-sm px-4 py-3 rounded-xl"></div>
+  <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5" id="grid-catalogo"><p class="text-center text-on-surface-variant py-16 sm:col-span-2 xl:col-span-3">Cargando catálogo...</p></div>
+</main>
+
+<div id="modal" class="fixed inset-0 z-[70] hidden items-center justify-center bg-black/30 p-4">
+  <div class="card rounded-2xl w-full max-w-lg p-6">
+    <div class="flex items-start justify-between gap-4">
+      <div><span class="text-xs font-semibold text-primary" id="modal-codigo"></span><h3 class="text-2xl font-semibold mt-1" id="modal-nombre"></h3><p class="text-sm text-on-surface-variant mt-1" id="modal-categoria"></p></div>
+      <button id="btn-cerrar" type="button" class="w-10 h-10 rounded-full hover:bg-surface-container-low"><span class="material-symbols-outlined">close</span></button>
+    </div>
+    <p class="text-sm text-on-surface-variant mt-4 leading-relaxed" id="modal-descripcion"></p>
+    <div class="flex items-center justify-between mt-5 pt-4 border-t border-outline-variant/30"><span class="text-xl font-bold" id="modal-precio"></span><span class="text-sm font-semibold" id="modal-disponibilidad"></span></div>
+    <div class="flex gap-3 mt-5"><a class="flex-1 text-center bg-primary text-on-primary rounded-xl py-3 text-sm font-medium" id="modal-pedir" href="/pedidos">Solicitar pedido</a><button class="px-5 py-3 rounded-xl border border-outline-variant text-sm" id="btn-cerrar-2" type="button">Cerrar</button></div>
+  </div>
+</div>
+
+<script nonce="<%= cspNonce %>">
+const token = localStorage.getItem('token');
+const tipo = localStorage.getItem('tipo') || 'Usuario';
+const esCliente = tipo === 'Cliente';
+let productos = [];
+let filtro = '';
+let categoria = '';
+
+const escapeHtml = (valor) => String(valor ?? '').replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('"', '&quot;').replaceAll("'", '&#39;');
+const mostrarError = (mensaje) => { const el = document.getElementById('error'); el.textContent = mensaje; el.classList.remove('hidden'); };
+const precio = (valor) => { const n = Number(valor && valor.$numberDecimal ? valor.$numberDecimal : valor); return Number.isFinite(n) ? n.toLocaleString('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '—'; };
+const categoriaLabel = (valor) => ({ tela: 'Tela', espuma: 'Espuma', madera: 'Madera', herraje: 'Herraje', hilo: 'Hilo', otro: 'Otro', Oficina: 'Oficina', Industrial: 'Industrial', Hogar: 'Hogar', Automoviles: 'Automóviles' }[valor] || valor || 'Sin categoría');
+
+const apiFetch = async (url) => {
+  const respuesta = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+  if (respuesta.status === 401) { localStorage.clear(); window.location.replace('/login'); throw new Error('Sesión expirada'); }
+  const cuerpo = await respuesta.json().catch(() => ({}));
+  if (!respuesta.ok) throw new Error(cuerpo.message || 'Error del servidor');
+  return cuerpo;
+};
+
+const estaDisponible = (producto) => producto.disponible !== undefined ? Boolean(producto.disponible) : Number(producto.stock) > 0;
+
+const tarjeta = (producto) => `<button class="card rounded-2xl p-5 text-left flex flex-col hover:-translate-y-0.5 transition-transform" data-producto="${escapeHtml(producto._id)}">
+  <div class="flex items-start justify-between gap-2"><span class="text-xs font-semibold text-primary">#${escapeHtml(producto.codigoProducto)}</span><span class="px-2 py-0.5 rounded-full text-[10px] font-semibold ${estaDisponible(producto) ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-error'}">${estaDisponible(producto) ? 'Disponible' : 'Agotado'}</span></div>
+  <span class="self-start mt-3 px-2.5 py-0.5 rounded-full bg-surface-container-high text-on-surface-variant text-xs">${escapeHtml(categoriaLabel(producto.categoria))}</span>
+  <h3 class="text-xl font-semibold mt-3">${escapeHtml(producto.nombre)}</h3>
+  <p class="text-sm text-on-surface-variant mt-1 flex-1">${escapeHtml(producto.descripcion)}</p>
+  <p class="text-lg font-bold mt-4">${precio(producto.precio)}</p>
+</button>`;
+
+const renderizar = () => {
+  const texto = filtro.toLowerCase();
+  const visibles = productos.filter((producto) => {
+    const coincideTexto = !texto || `${producto.nombre} ${producto.codigoProducto} ${producto.descripcion}`.toLowerCase().includes(texto);
+    const coincideCategoria = !categoria || producto.categoria === categoria;
+    return coincideTexto && coincideCategoria;
+  });
+  const grid = document.getElementById('grid-catalogo');
+  grid.innerHTML = visibles.length ? visibles.map(tarjeta).join('') : '<p class="text-center text-on-surface-variant py-16 sm:col-span-2 xl:col-span-3">No hay productos que coincidan con la búsqueda.</p>';
+};
+
+const cargar = async () => {
+  try {
+    const respuesta = await apiFetch('/api/productos?limite=200');
+    productos = respuesta.data || [];
+    const categorias = [...new Set(productos.map((producto) => producto.categoria).filter(Boolean))];
+    const select = document.getElementById('categoria');
+    select.innerHTML = '<option value="">Todas las categorías</option>' + categorias.map((valor) => `<option value="${escapeHtml(valor)}">${escapeHtml(categoriaLabel(valor))}</option>`).join('');
+    renderizar();
+  } catch (error) { mostrarError(error.message); }
+};
+
+const modal = document.getElementById('modal');
+const abrir = (producto) => {
+  document.getElementById('modal-codigo').textContent = `#${producto.codigoProducto}`;
+  document.getElementById('modal-nombre').textContent = producto.nombre;
+  document.getElementById('modal-categoria').textContent = categoriaLabel(producto.categoria);
+  document.getElementById('modal-descripcion').textContent = producto.descripcion;
+  document.getElementById('modal-precio').textContent = precio(producto.precio);
+  document.getElementById('modal-disponibilidad').textContent = estaDisponible(producto) ? 'Disponible' : 'Agotado';
+  document.getElementById('modal-disponibilidad').className = `text-sm font-semibold ${estaDisponible(producto) ? 'text-emerald-700' : 'text-error'}`;
+  document.getElementById('modal-pedir').classList.toggle('hidden', !esCliente || !estaDisponible(producto));
+  modal.classList.remove('hidden'); modal.classList.add('flex');
+};
+const cerrar = () => { modal.classList.add('hidden'); modal.classList.remove('flex'); };
+
+document.getElementById('grid-catalogo').addEventListener('click', (evento) => {
+  const boton = evento.target.closest('button[data-producto]');
+  if (!boton) return;
+  const producto = productos.find((item) => item._id === boton.dataset.producto);
+  if (producto) abrir(producto);
+});
+document.getElementById('buscador').addEventListener('input', (evento) => { filtro = evento.target.value.trim(); renderizar(); });
+document.getElementById('categoria').addEventListener('change', (evento) => { categoria = evento.target.value; renderizar(); });
+document.getElementById('btn-cerrar').addEventListener('click', cerrar);
+document.getElementById('btn-cerrar-2').addEventListener('click', cerrar);
+modal.addEventListener('click', (evento) => { if (evento.target === modal) cerrar(); });
+document.getElementById('btn-logout-sidebar').addEventListener('click', async () => {
+  try { await fetch('/api/auth/logout', { method: 'POST', headers: { Authorization: `Bearer ${token}` } }); } catch (error) { console.warn(error.message); }
+  localStorage.clear(); window.location.replace('/login');
+});
+
+if (!token) window.location.replace('/login');
+else {
+  if (esCliente) document.querySelectorAll('[data-staff]').forEach((elemento) => elemento.classList.add('hidden'));
+  cargar();
+}
+</script>
+</body>
+</html>

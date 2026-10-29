@@ -1,33 +1,43 @@
 const express = require('express');
 
-const actividadController = require('../controllers/actividad.controller')
-const administradorController = require('../controllers/administrador.controller')
-const calendarioController = require('../controllers/calendario.controller')
-const clienteController = require('../controllers/cliente.controller')
-const finanzaController = require('../controllers/.controller')
-const calendarioController = require('../controllers/finanza.controller')
-const historialController = require('../controllers/historial.controller')
-const inventarioController = require('../controllers/inventario.controller')
-const pedidoController = require('../controllers/pedido.controller')
-const productoController = require('../controllers/producto.controller')
-const tareaPedidoController = require('../controllers/tareaPedido.controller')
-const trabajadorController = require('../controllers/trabajador.controller')
-const inventarioController = require('../controllers/inventario.controller')
+const {
+  authenticateUser,
+  requireAdminOrSecretaria,
+  requireStaff,
+} = require('../middleware/autenticacion.middleware');
+const { limitarMensajeria } = require('../middleware/seguridad');
+
+const autenticacionRouter = require('./autenticacion.router');
+const clienteRouter = require('./cliente.router');
+const trabajadorRouter = require('./trabajador.router');
+const productoRouter = require('./producto.router');
+const pedidoRouter = require('./pedido.router');
+const inventarioRouter = require('./inventario.router');
+const usuarioRouter = require('./usuario.router');
+const panelRouter = require('./panel.router');
+const auditoriaRouter = require('./auditoria.router');
+const tareaRouter = require('./tareaPedido.router');
+const actividadRouter = require('./actividad.router');
+const calendarioRouter = require('./calendario.router');
+const finanzaRouter = require('./finanza.router');
+const mensajeriaRouter = require('./mensajeria.router');
 
 const router = express.Router();
 
-//Enrutamiento de trabajador
-router.get('/trabajadores', trabajadorController.getTrabajadores);
-router.get('/trabajadores/:id', trabajadorController.getTrabajadorById);
-router.post('/trabajadores', trabajadorController.createTrabajador);
-router.put('/trabajadores/:id', trabajadorController.updateTrabajador);
-router.delete('/trabajadores/:id', trabajadorController.deleteTrabajador);
+router.use('/auth', autenticacionRouter);
 
-//Enrutamiento de inventario
-router.get('/inventario', inventarioController.getInventarios);
-router.get('/inventario/:id', inventarioController.getInventarioById);
-router.post('/inventario', inventarioController.createInventario);
-router.put('/inventario/:id', inventarioController.updateInventario);
-router.delete('/inventario/:id', inventarioController.deleteInventario);
+router.use('/panel', authenticateUser, requireStaff, panelRouter);
+router.use('/clientes', authenticateUser, requireStaff, clienteRouter);
+router.use('/trabajadores', authenticateUser, requireStaff, trabajadorRouter);
+router.use('/productos', authenticateUser, productoRouter);
+router.use('/pedidos', authenticateUser, pedidoRouter);
+router.use('/inventario', authenticateUser, requireStaff, inventarioRouter);
+router.use('/tareas', authenticateUser, requireStaff, tareaRouter);
+router.use('/actividades', authenticateUser, requireStaff, actividadRouter);
+router.use('/calendario', authenticateUser, requireStaff, calendarioRouter);
+router.use('/finanzas', authenticateUser, requireAdminOrSecretaria, finanzaRouter);
+router.use('/usuarios', authenticateUser, requireAdminOrSecretaria, usuarioRouter);
+router.use('/auditoria', authenticateUser, requireAdminOrSecretaria, auditoriaRouter);
+router.use('/mensajeria', authenticateUser, limitarMensajeria, mensajeriaRouter);
 
 module.exports = router;

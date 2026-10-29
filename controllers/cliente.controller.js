@@ -6,8 +6,13 @@ const {
   LONGITUD_MAXIMA_PASSWORD,
   longitudPasswordValida,
 } = require('../services/autenticacion.service');
+const {
+  consultarPaginado,
+  responderPaginado,
+} = require('../services/paginacion.service');
 
 const { isValidObjectId } = mongoose;
+const escaparRegex = (texto) => String(texto).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 const extraerCampos = (body) => ({
   nombre: body.nombre,
@@ -20,13 +25,23 @@ const extraerCampos = (body) => ({
 
 const getClientes = async (req, res) => {
   try {
-    const clientes = await Cliente.find();
+    const filtro = {};
 
-    res.status(200).json({
-      status: 200,
-      message: 'Clientes obtenidos correctamente',
-      data: clientes,
+    if (String(req.query.incluirInactivos) !== 'true') {
+      filtro.activo = { $ne: false };
+    }
+
+    if (req.query.q) {
+      const regex = new RegExp(escaparRegex(req.query.q), 'i');
+      filtro.$or = [{ nombre: regex }, { documento: regex }, { correo: regex }, { celular: regex }];
+    }
+
+    const { items, paginacion } = await consultarPaginado(Cliente, filtro, {
+      query: req.query,
+      sort: { nombre: 1 },
     });
+
+    return responderPaginado(res, 'Clientes obtenidos correctamente', items, paginacion);
   } catch (error) {
     res.status(500).json({
       status: 500,

@@ -10,4 +10,7 @@ const inventarioSchema = new Schema(
   { collection: 'inventario' }
 );
 
+inventarioSchema.index({ idProducto: 1 });
+inventarioSchema.index({ fechaIngreso: -1 });
+
 module.exports = mongoose.model('Inventario', inventarioSchema);

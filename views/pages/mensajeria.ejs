@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html class="light" lang="es">
+<head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>Kanview - <%= titulo %></title>
+<script nonce="<%= cspNonce %>" src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script nonce="<%= cspNonce %>">tailwind.config={theme:{extend:{colors:{primary:'#006565','primary-container':'#008080','on-primary':'#ffffff',background:'#fbf9f8','on-surface':'#1b1c1c','on-surface-variant':'#3e4949','surface-container-low':'#f5f3f3','surface-container-lowest':'#ffffff','surface-container-high':'#eae8e7','outline-variant':'#bdc9c8',error:'#ba1a1a'},fontFamily:{sans:['Inter']}}}};</script>
+<style>
+body{background:#fbf9f8;font-family:'Inter',sans-serif}
+.card{background:#fff;box-shadow:8px 8px 16px rgba(0,0,0,.03),-8px -8px 16px #fff}
+.material-symbols-outlined{font-variation-settings:'FILL' 0,'wght' 300,'GRAD' 0,'opsz' 24}
+.chat-scroll::-webkit-scrollbar{width:6px}.chat-scroll::-webkit-scrollbar-thumb{background:#cbd5d5;border-radius:999px}
+</style>
+</head>
+<body class="text-on-surface h-screen overflow-hidden">
+<%- include('../partials/sidebar') %>
+
+<main class="md:ml-64 h-screen p-3 md:p-6 max-w-[1500px] mx-auto">
+  <div class="grid grid-cols-1 lg:grid-cols-[340px_1fr] gap-4 h-full">
+    <section class="card rounded-2xl p-4 flex flex-col min-h-0">
+      <div class="flex items-center justify-between mb-3"><h2 class="text-xl font-semibold">Mensajes</h2><span class="text-xs text-on-surface-variant" id="estado-conexion">Conectando…</span></div>
+      <div class="relative mb-3"><span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-[20px]">search</span><input class="w-full pl-10 pr-3 py-2 rounded-xl border border-outline-variant bg-surface-container-low text-sm" id="buscador" placeholder="Buscar conversación o contacto"></div>
+      <div class="flex-1 overflow-y-auto chat-scroll space-y-4 pr-1">
+        <div><p class="text-xs uppercase tracking-wide text-on-surface-variant font-semibold mb-2">Conversaciones</p><div class="space-y-1" id="lista-conversaciones"><p class="text-sm text-on-surface-variant">Cargando…</p></div></div>
+        <div><p class="text-xs uppercase tracking-wide text-on-surface-variant font-semibold mb-2">Contactos</p><div class="space-y-1" id="lista-contactos"><p class="text-sm text-on-surface-variant">Cargando…</p></div></div>
+      </div>
+    </section>
+
+    <section class="card rounded-2xl flex flex-col min-h-0 overflow-hidden">
+      <header class="px-5 py-4 border-b border-outline-variant/30 flex items-center justify-between">
+        <div><h2 class="text-lg font-semibold" id="chat-titulo">Selecciona una conversación</h2><p class="text-xs text-on-surface-variant" id="chat-subtitulo">Chat interno del taller</p></div>
+        <span class="material-symbols-outlined text-primary">forum</span>
+      </header>
+      <div class="flex-1 overflow-y-auto chat-scroll p-5 space-y-3 bg-[#faf8f7]" id="lista-mensajes"><div class="h-full flex flex-col items-center justify-center text-center text-on-surface-variant"><span class="material-symbols-outlined text-5xl mb-2">mark_chat_unread</span><p>Elige una conversación o inicia una desde tus contactos.</p></div></div>
+      <form class="p-3 border-t border-outline-variant/30 flex gap-2" id="form-mensaje">
+        <input class="flex-1 px-4 py-3 rounded-xl border border-outline-variant bg-surface-container-low text-sm" id="texto" maxlength="2000" placeholder="Escribe un mensaje…" autocomplete="off" disabled>
+        <button class="bg-primary text-on-primary px-5 py-3 rounded-xl text-sm font-medium disabled:opacity-40" id="btn-enviar" type="submit" disabled><span class="material-symbols-outlined">send</span></button>
+      </form>
+    </section>
+  </div>
+</main>
+
+<div id="error" class="hidden fixed bottom-5 left-1/2 -translate-x-1/2 z-50 bg-error text-white text-sm px-5 py-3 rounded-full shadow-lg"></div>
+
+<script nonce="<%= cspNonce %>">
+const token = localStorage.getItem('token');
+const tipo = localStorage.getItem('tipo') || 'Usuario';
+const rol = localStorage.getItem('rol') || '';
+const usuarioId = localStorage.getItem('usuarioId') || '';
+const esCliente = tipo === 'Cliente';
+let conversaciones = [];
+let contactos = [];
+let mensajes = [];
+let conversacionActual = null;
+let socket = null;
+let reintento = null;
+let temporizadorError = null;
+
+const escapeHtml = (valor) => String(valor ?? '').replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('"', '&quot;').replaceAll("'", '&#39;');
+const mostrarError = (mensaje) => { const el = document.getElementById('error'); el.textContent = mensaje; el.classList.remove('hidden'); clearTimeout(temporizadorError); temporizadorError = setTimeout(() => el.classList.add('hidden'), 4000); };
+const fechaHora = (valor) => { const f = new Date(valor); return Number.isNaN(f.getTime()) ? '' : f.toLocaleString('es-CO', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }); };
+const hora = (valor) => { const f = new Date(valor); return Number.isNaN(f.getTime()) ? '' : f.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' }); };
+
+const apiFetch = async (url, opciones = {}) => {
+  const respuesta = await fetch(url, { ...opciones, headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}`, ...(opciones.headers || {}) } });
+  if (respuesta.status === 401) { localStorage.clear(); window.location.replace('/login'); throw new Error('Sesión expirada'); }
+  const cuerpo = await respuesta.json().catch(() => ({}));
+  if (!respuesta.ok) throw new Error(cuerpo.message || 'Error del servidor');
+  return cuerpo;
+};
+
+const totalNoLeidos = () => conversaciones.reduce((total, conversacion) => total + (conversacion.noLeidos || 0), 0);
+const actualizarBadge = () => {
+  const total = totalNoLeidos();
+  const badge = document.getElementById('badge-no-leidos');
+  if (badge) badge.textContent = total;
+  document.title = total > 0 ? `(${total}) Kanview - Mensajería` : 'Kanview - Mensajería';
+};
+
+const contactoItem = (contacto, esConversacion = false) => {
+  const activo = conversacionActual && String(conversacionActual._id) === String(contacto._id);
+  const nombre = contacto.otro ? contacto.otro.nombre : contacto.nombre;
+  const iniciales = contacto.otro ? contacto.otro.iniciales : contacto.iniciales;
+  const rolTexto = contacto.otro ? contacto.otro.rol : contacto.rol;
+  const ultimo = contacto.ultimoMensaje ? contacto.ultimoMensaje.texto : 'Toca para iniciar la conversación';
+  const noLeidos = contacto.noLeidos || 0;
+  return `<button class="w-full text-left px-3 py-2.5 rounded-xl transition-colors ${activo ? 'bg-primary/10 border border-primary/20' : 'hover:bg-surface-container-low'}" data-conversacion="${esConversacion ? contacto._id : ''}" data-contacto-tipo="${contacto.otro ? contacto.otro.tipo : contacto.tipo}" data-contacto-id="${contacto.otro ? contacto.otro.id : contacto.id}">
+    <div class="flex items-center gap-3">
+      <div class="w-10 h-10 rounded-full bg-primary-container/15 text-primary flex items-center justify-center font-semibold text-sm shrink-0">${escapeHtml(iniciales)}</div>
+      <div class="min-w-0 flex-1"><div class="flex items-center justify-between gap-2"><p class="font-medium truncate">${escapeHtml(nombre)}</p>${noLeidos ? `<span class="text-[10px] bg-primary text-on-primary rounded-full px-1.5 py-0.5">${noLeidos}</span>` : ''}</div><p class="text-xs text-on-surface-variant truncate">${escapeHtml(rolTexto)} · ${escapeHtml(ultimo)}</p></div>
+    </div>
+  </button>`;
+};
+
+const renderizarListas = () => {
+  const filtro = document.getElementById('buscador').value.trim().toLowerCase();
+  const visibles = conversaciones.filter((c) => !filtro || `${c.otro.nombre} ${c.otro.rol}`.toLowerCase().includes(filtro));
+  const idsConversacion = new Set(conversaciones.map((c) => `${c.otro.tipo}:${c.otro.id}`));
+  const contactosNuevos = contactos.filter((c) => !idsConversacion.has(`${c.tipo}:${c.id}`) && (!filtro || `${c.nombre} ${c.rol}`.toLowerCase().includes(filtro)));
+
+  document.getElementById('lista-conversaciones').innerHTML = visibles.length ? visibles.map((c) => contactoItem(c, true)).join('') : '<p class="text-sm text-on-surface-variant px-2">Sin conversaciones.</p>';
+  document.getElementById('lista-contactos').innerHTML = contactosNuevos.length ? contactosNuevos.map((c) => contactoItem(c, false)).join('') : '<p class="text-sm text-on-surface-variant px-2">No hay contactos disponibles.</p>';
+  actualizarBadge();
+};
+
+const renderizarMensajes = () => {
+  const contenedor = document.getElementById('lista-mensajes');
+  if (!conversacionActual) {
+    contenedor.innerHTML = '<div class="h-full flex flex-col items-center justify-center text-center text-on-surface-variant"><span class="material-symbols-outlined text-5xl mb-2">mark_chat_unread</span><p>Elige una conversación o inicia una desde tus contactos.</p></div>';
+    return;
+  }
+  if (!mensajes.length) {
+    contenedor.innerHTML = '<div class="h-full flex items-center justify-center text-on-surface-variant text-sm">Todavía no hay mensajes. Escribe el primero.</div>';
+    return;
+  }
+  contenedor.innerHTML = mensajes.map((mensaje) => {
+    const mio = mensaje.autorTipo === tipo && String(mensaje.autorId) === String(usuarioId);
+    return `<div class="flex ${mio ? 'justify-end' : 'justify-start'}">
+      <div class="max-w-[78%] rounded-2xl px-4 py-2.5 ${mio ? 'bg-primary text-on-primary rounded-br-md' : 'bg-white border border-outline-variant/40 rounded-bl-md'}">
+        ${mio ? '' : `<p class="text-[10px] font-semibold opacity-70 mb-0.5">${escapeHtml(mensaje.autorNombre)}</p>`}
+        <p class="text-sm whitespace-pre-wrap break-words">${escapeHtml(mensaje.texto)}</p>
+        <p class="text-[10px] opacity-60 mt-1 text-right">${hora(mensaje.createdAt)}</p>
+      </div>
+    </div>`;
+  }).join('');
+  contenedor.scrollTop = contenedor.scrollHeight;
+};
+
+const seleccionarConversacion = async (id) => {
+  const conversacion = conversaciones.find((c) => String(c._id) === String(id));
+  if (!conversacion) return;
+  conversacionActual = conversacion;
+  conversacion.noLeidos = 0;
+  document.getElementById('chat-titulo').textContent = conversacion.otro.nombre;
+  document.getElementById('chat-subtitulo').textContent = `${conversacion.otro.rol} · chat interno`;
+  document.getElementById('texto').disabled = false;
+  document.getElementById('btn-enviar').disabled = false;
+  renderizarListas();
+  try {
+    const respuesta = await apiFetch(`/api/mensajeria/conversaciones/${conversacion._id}/mensajes`);
+    mensajes = respuesta.data || [];
+    renderizarMensajes();
+    if (socket && socket.readyState === WebSocket.OPEN) {
+      socket.send(JSON.stringify({ tipo: 'leidos', conversacionId: conversacion._id }));
+    }
+  } catch (error) { mostrarError(error.message); }
+};
+
+const iniciarConversacion = async (tipoContacto, id) => {
+  try {
+    const respuesta = await apiFetch('/api/mensajeria/conversaciones', { method: 'POST', body: JSON.stringify({ tipo: tipoContacto, id }) });
+    const conversacion = respuesta.data;
+    const existente = conversaciones.find((c) => String(c._id) === String(conversacion._id));
+    if (!existente) conversaciones.unshift(conversacion);
+    renderizarListas();
+    await seleccionarConversacion(conversacion._id);
+  } catch (error) { mostrarError(error.message); }
+};
+
+const cargar = async () => {
+  try {
+    const [respuestaConversaciones, respuestaContactos] = await Promise.all([
+      apiFetch('/api/mensajeria/conversaciones'),
+      apiFetch('/api/mensajeria/contactos'),
+    ]);
+    conversaciones = respuestaConversaciones.data || [];
+    contactos = respuestaContactos.data || [];
+    renderizarListas();
+
+    const params = new URLSearchParams(window.location.search);
+    const id = params.get('conversacion');
+    if (id) await seleccionarConversacion(id);
+    else if (conversaciones.length) await seleccionarConversacion(conversaciones[0]._id);
+  } catch (error) { mostrarError(error.message); }
+};
+
+const conectarSocket = () => {
+  if (socket && (socket.readyState === WebSocket.OPEN || socket.readyState === WebSocket.CONNECTING)) return;
+  const protocolo = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+  const url = `${protocolo}//${window.location.host}/ws/mensajeria?token=${encodeURIComponent(token)}`;
+  socket = new WebSocket(url);
+
+  socket.addEventListener('open', () => {
+    document.getElementById('estado-conexion').textContent = 'En línea';
+    document.getElementById('estado-conexion').className = 'text-xs text-emerald-600';
+  });
+
+  socket.addEventListener('message', (evento) => {
+    let datos;
+    try { datos = JSON.parse(evento.data); } catch (error) { return; }
+
+    if (datos.tipo === 'mensaje') {
+      const esActual = conversacionActual && String(conversacionActual._id) === String(datos.conversacionId);
+      const conversacion = conversaciones.find((c) => String(c._id) === String(datos.conversacionId));
+      if (esActual) {
+        if (!mensajes.some((m) => String(m._id) === String(datos.mensaje._id))) {
+          mensajes.push(datos.mensaje);
+          renderizarMensajes();
+        }
+        if (datos.mensaje.autorTipo !== tipo) {
+          socket.send(JSON.stringify({ tipo: 'leidos', conversacionId: datos.conversacionId }));
+        }
+      } else if (conversacion && datos.mensaje.autorTipo !== tipo) {
+        conversacion.noLeidos = (conversacion.noLeidos || 0) + 1;
+        conversacion.ultimoMensaje = datos.mensaje;
+        conversacion.ultimaActividad = datos.mensaje.createdAt;
+        conversaciones.sort((a, b) => new Date(b.ultimaActividad) - new Date(a.ultimaActividad));
+        renderizarListas();
+      }
+    }
+
+    if (datos.tipo === 'leidos' && conversacionActual && String(conversacionActual._id) === String(datos.conversacionId)) {
+      mensajes = mensajes.map((mensaje) => ({ ...mensaje, leido: true }));
+    }
+
+    if (datos.tipo === 'no-leidos') {
+      actualizarBadge();
+    }
+
+    if (datos.tipo === 'error') mostrarError(datos.detalle);
+  });
+
+  socket.addEventListener('close', () => {
+    document.getElementById('estado-conexion').textContent = 'Reconectando…';
+    document.getElementById('estado-conexion').className = 'text-xs text-amber-600';
+    clearTimeout(reintento);
+    reintento = setTimeout(conectarSocket, 3000);
+  });
+
+  socket.addEventListener('error', () => {
+    document.getElementById('estado-conexion').textContent = 'Sin conexión';
+    document.getElementById('estado-conexion').className = 'text-xs text-error';
+  });
+};
+
+const enviarMensaje = async (evento) => {
+  evento.preventDefault();
+  const input = document.getElementById('texto');
+  const texto = input.value.trim();
+  if (!texto || !conversacionActual) return;
+
+  input.value = '';
+  try {
+    if (socket && socket.readyState === WebSocket.OPEN) {
+      socket.send(JSON.stringify({ tipo: 'mensaje', conversacionId: conversacionActual._id, texto }));
+    } else {
+      const respuesta = await apiFetch(`/api/mensajeria/conversaciones/${conversacionActual._id}/mensajes`, { method: 'POST', body: JSON.stringify({ texto }) });
+      if (!mensajes.some((m) => String(m._id) === String(respuesta.data._id))) {
+        mensajes.push(respuesta.data);
+        renderizarMensajes();
+      }
+    }
+  } catch (error) {
+    mostrarError(error.message);
+    input.value = texto;
+  }
+};
+
+document.getElementById('lista-conversaciones').addEventListener('click', (evento) => {
+  const boton = evento.target.closest('[data-conversacion]');
+  if (!boton || !boton.dataset.conversacion) return;
+  seleccionarConversacion(boton.dataset.conversacion);
+});
+
+document.getElementById('lista-contactos').addEventListener('click', (evento) => {
+  const boton = evento.target.closest('[data-contacto-id]');
+  if (!boton) return;
+  iniciarConversacion(boton.dataset.contactoTipo, boton.dataset.contactoId);
+});
+
+document.getElementById('buscador').addEventListener('input', renderizarListas);
+document.getElementById('form-mensaje').addEventListener('submit', enviarMensaje);
+document.getElementById('btn-logout-sidebar').addEventListener('click', async () => {
+  try { await apiFetch('/api/auth/logout', { method: 'POST' }); } catch (error) { console.warn(error.message); }
+  if (socket) socket.close();
+  localStorage.clear(); window.location.replace('/login');
+});
+
+if (!token) {
+  window.location.replace('/login');
+} else {
+  if (esCliente) document.querySelectorAll('[data-staff]').forEach((elemento) => elemento.classList.add('hidden'));
+  cargar().then(conectarSocket);
+}
+</script>
+</body>
+</html>

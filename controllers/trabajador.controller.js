@@ -1,117 +1,255 @@
-// Importación de mongoose y del modelo Trabajador
 const mongoose = require('mongoose');
 const Trabajador = require('../models/trabajador.model');
-const logger = require('../middleware/logs')
+const { registrarAuditoria } = require('../services/auditoria.service');
+const {
+  consultarPaginado,
+  responderPaginado,
+} = require('../services/paginacion.service');
 
-
-// Extrae Decimal128 para el campo salario
 const { Types } = mongoose;
+const escaparRegex = (texto) => String(texto).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
-// Obtiene todos los trabajadores de la colección y los retorna en formato JSON
+const responder = (res, status, message, data = null) =>
+  res.status(status).json({ status, message, data });
+
+const responderError = (res, error, contexto) => {
+  if (error instanceof mongoose.Error.ValidationError) {
+    return responder(res, 400, 'Error de validación', { error: error.message });
+  }
+
+  if (error instanceof mongoose.Error.CastError) {
+    return responder(res, 400, 'Dato inválido');
+  }
+
+  console.error(`[trabajadores] ${contexto}:`, error.message);
+  return responder(res, 500, contexto);
+};
+
+const campos = (body = {}) => ({
+  nombre: body.nombre,
+  documento: body.documento,
+  celular: body.celular,
+  direccion: body.direccion,
+  edad: body.edad,
+  fechaNacimiento: body.fechaNacimiento,
+  cargo: body.cargo,
+  RH: body.RH,
+  salario: body.salario,
+  tareasRealizadas: body.tareasRealizadas,
+  correo: body.correo,
+  activo: body.activo,
+});
+
+const prepararDatos = (body, { parcial = false } = {}) => {
+  const datos = {};
+
+  Object.entries(campos(body)).forEach(([campo, valor]) => {
+    if (valor !== undefined) datos[campo] = valor;
+  });
+
+  if (datos.salario !== undefined) {
+    const numero = Number(datos.salario);
+    if (!Number.isFinite(numero) || numero < 0) {
+      throw Object.assign(new Error('El salario debe ser un número mayor o igual a cero'), {
+        status: 400,
+      });
+    }
+    datos.salario = Types.Decimal128.fromString(numero.toFixed(2));
+  }
+
+  if (datos.fechaNacimiento !== undefined) {
+    const fecha = new Date(datos.fechaNacimiento);
+    if (Number.isNaN(fecha.getTime())) {
+      throw Object.assign(new Error('La fecha de nacimiento no es válida'), { status: 400 });
+    }
+    datos.fechaNacimiento = fecha;
+  }
+
+  if (datos.edad !== undefined) {
+    const edad = Number(datos.edad);
+    if (!Number.isInteger(edad) || edad < 0) {
+      throw Object.assign(new Error('La edad debe ser un entero mayor o igual a cero'), {
+        status: 400,
+      });
+    }
+    datos.edad = edad;
+  }
+
+  if (datos.tareasRealizadas !== undefined) {
+    const tareas = Number(datos.tareasRealizadas);
+    if (!Number.isInteger(tareas) || tareas < 0) {
+      throw Object.assign(new Error('Las tareas realizadas deben ser un entero no negativo'), {
+        status: 400,
+      });
+    }
+    datos.tareasRealizadas = tareas;
+  }
+
+  if (datos.activo !== undefined) {
+    datos.activo = Boolean(datos.activo);
+  }
+
+  if (!parcial) {
+    const obligatorios = ['nombre', 'documento', 'celular', 'direccion', 'fechaNacimiento', 'cargo', 'RH', 'salario'];
+    const faltantes = obligatorios.filter(
+      (campo) => datos[campo] === undefined || datos[campo] === null || datos[campo] === ''
+    );
+    if (faltantes.length > 0) {
+      throw Object.assign(new Error(`Faltan campos requeridos: ${faltantes.join(', ')}`), {
+        status: 400,
+      });
+    }
+    if (datos.tareasRealizadas === undefined) datos.tareasRealizadas = 0;
+  }
+
+  return datos;
+};
+
 exports.getTrabajadores = async (req, res) => {
   try {
-    const trabajadores = await Trabajador.find();
-    res.status(200).json(trabajadores);
+    const filtro = String(req.query.incluirInactivos) === 'true' ? {} : { activo: { $ne: false } };
+
+    if (req.query.q) {
+      const regex = new RegExp(escaparRegex(req.query.q), 'i');
+      filtro.$or = [{ nombre: regex }, { documento: regex }, { cargo: regex }, { correo: regex }];
+    }
+
+    const { items, paginacion } = await consultarPaginado(Trabajador, filtro, {
+      query: req.query,
+      sort: { nombre: 1 },
+    });
+
+    return responderPaginado(res, 'Trabajadores obtenidos correctamente', items, paginacion);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    return responderError(res, error, 'Error al obtener los trabajadores');
   }
 };
 
-// Busca un trabajador por su documento (recibido como req.params.id desde el router)
-// Si no existe, responde con 404
 exports.getTrabajadorById = async (req, res) => {
   try {
-    const trabajador = await Trabajador.findOne({ documento: req.params.id });
+    const filtro = mongoose.isValidObjectId(req.params.id)
+      ? { _id: req.params.id }
+      : { documento: req.params.id };
+    const trabajador = await Trabajador.findOne(filtro);
+
     if (!trabajador) {
-      return res.status(404).json({ error: 'Trabajador no encontrado' });
+      return responder(res, 404, 'Trabajador no encontrado');
     }
-    res.status(200).json(trabajador);
+
+    return responder(res, 200, 'Trabajador obtenido correctamente', trabajador);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    return responderError(res, error, 'Error al obtener el trabajador');
   }
 };
 
-// Registra un nuevo trabajador
 exports.createTrabajador = async (req, res) => {
   try {
-    // Arma el objeto con los 10 campos del modelo a partir del body
-    let nuevoTrabajador = {
-      nombre: req.body.nombre,
-      documento: req.body.documento,
-      celular: req.body.celular,
-      direccion: req.body.direccion,
-      edad: req.body.edad,
-      fechaNacimiento: req.body.fechaNacimiento,
-      cargo: req.body.cargo,
-      RH: req.body.RH,
-      salario: req.body.salario,
-      tareasRealizadas: req.body.tareasRealizadas,
-    };
+    const datos = prepararDatos(req.body);
+    const trabajador = await Trabajador.create({ ...datos, activo: datos.activo !== false });
 
-    // Convierte salario a Decimal128 (tipo del modelo)
-    if (nuevoTrabajador.salario !== undefined) {
-      nuevoTrabajador.salario = Types.Decimal128.fromString(String(nuevoTrabajador.salario));
-    }
+    await registrarAuditoria(req, {
+      accion: 'trabajador.crear',
+      entidad: 'Trabajador',
+      entidadId: trabajador._id,
+      detalle: `${trabajador.nombre} · ${trabajador.documento}`,
+    });
 
-    // Convierte fechaNacimiento a tipo Date
-    if (nuevoTrabajador.fechaNacimiento !== undefined) {
-      nuevoTrabajador.fechaNacimiento = new Date(nuevoTrabajador.fechaNacimiento);
-    }
-
-    // Crea el documento en la base y responde 201
-    const trabajadorGuardado = await Trabajador.create(nuevoTrabajador);
-    res.status(201).json(trabajadorGuardado);
-    logger.escribir('Se creo el trabajador correctamente', 'Admin')
+    return responder(res, 201, 'Trabajador creado correctamente', trabajador);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    if (error.status) return responder(res, error.status, error.message);
+    return responderError(res, error, 'Error al crear el trabajador');
   }
 };
 
-// Actualiza un trabajador existente
 exports.updateTrabajador = async (req, res) => {
   try {
-    // Arma el objeto con los campos a actualizar desde el body
-    let datos = {
-      nombre: req.body.nombre,
-      documento: req.body.documento,
-      celular: req.body.celular,
-      direccion: req.body.direccion,
-      edad: req.body.edad,
-      fechaNacimiento: req.body.fechaNacimiento,
-      cargo: req.body.cargo,
-      RH: req.body.RH,
-      salario: req.body.salario,
-      tareasRealizadas: req.body.tareasRealizadas,
-    };
+    const datos = prepararDatos(req.body, { parcial: true });
 
-    // Aplica las mismas conversiones de salario y fechaNacimiento
-    if (datos.salario !== undefined) {
-      datos.salario = Types.Decimal128.fromString(String(datos.salario));
+    if (Object.keys(datos).length === 0) {
+      return responder(res, 400, 'No se enviaron campos para actualizar');
     }
 
-    if (datos.fechaNacimiento !== undefined) {
-      datos.fechaNacimiento = new Date(datos.fechaNacimiento);
+    const filtro = mongoose.isValidObjectId(req.params.id)
+      ? { _id: req.params.id }
+      : { documento: req.params.id };
+
+    const trabajador = await Trabajador.findOneAndUpdate(filtro, datos, {
+      new: true,
+      runValidators: true,
+    });
+
+    if (!trabajador) {
+      return responder(res, 404, 'Trabajador no encontrado');
     }
 
-    // Actualiza el trabajador cuyo documento coincida con req.params.id usando $set
-    const trabajadorActualizado = await Trabajador.updateOne(
-      { documento: req.params.id },
-      { $set: datos }
-    );
-    // Responde con el resultado de la operación
-    res.status(200).json(trabajadorActualizado);
+    await registrarAuditoria(req, {
+      accion: 'trabajador.actualizar',
+      entidad: 'Trabajador',
+      entidadId: trabajador._id,
+      detalle: trabajador.nombre,
+    });
+
+    return responder(res, 200, 'Trabajador actualizado correctamente', trabajador);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    if (error.status) return responder(res, error.status, error.message);
+    return responderError(res, error, 'Error al actualizar el trabajador');
   }
 };
 
-// Elimina el trabajador cuyo documento coincida con req.params.id
-// Responde con el resultado de la operación
+exports.reactivarTrabajador = async (req, res) => {
+  try {
+    const filtro = mongoose.isValidObjectId(req.params.id)
+      ? { _id: req.params.id }
+      : { documento: req.params.id };
+
+    const trabajador = await Trabajador.findOneAndUpdate(
+      filtro,
+      { activo: true },
+      { returnDocument: 'after' }
+    );
+
+    if (!trabajador) {
+      return responder(res, 404, 'Trabajador no encontrado');
+    }
+
+    await registrarAuditoria(req, {
+      accion: 'trabajador.reactivar',
+      entidad: 'Trabajador',
+      entidadId: trabajador._id,
+      detalle: trabajador.nombre,
+    });
+
+    return responder(res, 200, 'Trabajador reactivado correctamente', trabajador);
+  } catch (error) {
+    return responderError(res, error, 'Error al reactivar el trabajador');
+  }
+};
+
 exports.deleteTrabajador = async (req, res) => {
   try {
-    const trabajadorEliminado = await Trabajador.deleteOne({ documento: req.params.id });
-    res.status(200).json(trabajadorEliminado);
+    const filtro = mongoose.isValidObjectId(req.params.id)
+      ? { _id: req.params.id }
+      : { documento: req.params.id };
+
+    const trabajador = await Trabajador.findOneAndUpdate(
+      filtro,
+      { activo: false },
+      { new: true }
+    );
+
+    if (!trabajador) {
+      return responder(res, 404, 'Trabajador no encontrado');
+    }
+
+    await registrarAuditoria(req, {
+      accion: 'trabajador.desactivar',
+      entidad: 'Trabajador',
+      entidadId: trabajador._id,
+      detalle: trabajador.nombre,
+    });
+
+    return responder(res, 200, 'Trabajador desactivado correctamente', trabajador);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    return responderError(res, error, 'Error al desactivar el trabajador');
   }
 };
