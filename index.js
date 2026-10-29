@@ -9,6 +9,7 @@ const trabajadorRouter = require('./router/trabajador.router');
 const clienteRouter = require('./router/cliente.router');
 const pedidoRouter = require('./router/pedido.router');
 const productoRouter = require('./router/producto.router');
+const { createTrabajador } = require('./controllers/trabajador.controller');
 const { authenticate, requireUsuario } = require('./middleware/autenticacion.middleware');
 
 const app = express();
@@ -21,6 +22,8 @@ app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, 'public')));
 
 app.use('/api/auth', autenticacionRouter);
+// Registro de trabajador sin sesión: el POST es público, el resto de /api/trabajadores queda protegido
+app.post('/api/trabajadores', createTrabajador);
 app.use('/api/trabajadores', authenticate, requireUsuario, trabajadorRouter);
 app.use('/api/clientes', authenticate, requireUsuario, clienteRouter);
 app.use('/api/pedidos', authenticate, pedidoRouter);
@@ -48,6 +51,11 @@ app.get('/productos', (req, res) => {
 
 app.get('/portal', (req, res) => {
   res.render('pages/portal', { titulo: 'Portal del Cliente' });
+});
+
+// Vista pública de registro de trabajador (el POST se resuelve en /api/trabajadores)
+app.get('/trabajadores/registro', (req, res) => {
+  res.render('pages/registro-trabajador');
 });
 
 app.use((req, res) => {

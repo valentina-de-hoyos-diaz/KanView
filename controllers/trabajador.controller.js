@@ -1,6 +1,8 @@
 // Importación de mongoose y del modelo Trabajador
 const mongoose = require('mongoose');
 const Trabajador = require('../models/trabajador.model');
+const logger = require('../middleware/logs')
+
 
 // Extrae Decimal128 para el campo salario
 const { Types } = mongoose;
@@ -59,6 +61,7 @@ exports.createTrabajador = async (req, res) => {
     // Crea el documento en la base y responde 201
     const trabajadorGuardado = await Trabajador.create(nuevoTrabajador);
     res.status(201).json(trabajadorGuardado);
+    logger.escribir('Se creo el trabajador correctamente', 'Admin')
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
